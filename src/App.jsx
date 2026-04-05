@@ -60,10 +60,22 @@ function getDayOfWeek(dateKey) {
   return date.toLocaleDateString('ru-RU', { weekday: 'short' })
 }
 
+function getHourlyCounts(cigarettes, dayKey) {
+  const hours = Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0 }))
+  cigarettes
+    .filter(t => getDateKey(t) === dayKey)
+    .forEach(t => {
+      const hour = new Date(t).getHours()
+      hours[hour].count++
+    })
+  return hours
+}
+
 function App() {
   const [data, setData] = useState(loadData)
   const [timeSinceLast, setTimeSinceLast] = useState(0)
   const [activeTab, setActiveTab] = useState('home')
+  const [selectedDay, setSelectedDay] = useState(null)
 
   const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
 
@@ -173,7 +185,12 @@ function App() {
 
           <div className="chart">
             {dailyCounts.map(({ day, count }) => (
-              <div key={day} className="chart-bar-wrapper">
+              <div
+                key={day}
+                className={`chart-bar-wrapper ${selectedDay === day ? 'selected' : ''}`}
+                onClick={() => setSelectedDay(selectedDay === day ? null : day)}
+                style={{ cursor: 'pointer' }}
+              >
                 <span className="chart-count">{count}</span>
                 <div
                   className="chart-bar"
@@ -183,6 +200,37 @@ function App() {
               </div>
             ))}
           </div>
+
+          {selectedDay && (
+            <div className="day-detail">
+              <div className="day-detail-header">
+                <h3>{formatDate(selectedDay)}</h3>
+                <button className="close-btn" onClick={() => setSelectedDay(null)}>×</button>
+              </div>
+              <p className="day-detail-subtitle">Распределение по часам</p>
+              <div className="hourly-chart">
+                {(() => {
+                  const hourly = getHourlyCounts(data.cigarettes, selectedDay)
+                  const maxHourly = Math.max(...hourly.map(h => h.count), 1)
+                  return hourly.map(({ hour, count }) => (
+                    <div key={hour} className="hourly-bar-wrapper">
+                      <div
+                        className="hourly-bar"
+                        style={{ height: `${(count / maxHourly) * 60}px` }}
+                        title={`${hour}:00 - ${count} шт`}
+                      />
+                      {hour % 6 === 0 && <span className="hourly-label">{hour}</span>}
+                    </div>
+                  ))
+                })()}
+              </div>
+              <div className="hourly-legend">
+                <span>00:00</span>
+                <span>12:00</span>
+                <span>23:00</span>
+              </div>
+            </div>
+          )}
 
           <div style={{ marginTop: 24, padding: '16px', background: 'var(--bg)', borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
