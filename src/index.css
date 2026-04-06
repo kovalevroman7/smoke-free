@@ -345,3 +345,113 @@ body {
   color: var(--text-secondary);
   padding: 0 4px;
 }
+
+.history-item.clickable {
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.history-item.clickable:hover {
+  background: #e5e7eb;
+}
+
+.history-item.clickable:active {
+  transform: scale(0.98);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 24px;
+  width: 100%;
+  max-width: 320px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal h3 {
+  font-size: 18px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.time-inputs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.time-input-field {
+  width: 80px;
+  padding: 16px;
+  font-size: 32px;
+  font-weight: 600;
+  text-align: center;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  -moz-appearance: textfield;
+}
+
+.time-input-field::-webkit-outer-spin-button,
+.time-input-field::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.time-input-field:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.time-separator {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.modal-buttons {
+  display: flex;
+  gap: 12px;
+}
+
+.modal-btn {
+  flex: 1;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+}
+
+.modal-btn:active {
+  transform: scale(0.98);
+}
+
+.modal-btn.cancel {
+  background: var(--bg);
+  color: var(--text-secondary);
+}
+
+.modal-btn.save {
+  background: var(--primary);
+  color: white;
+}

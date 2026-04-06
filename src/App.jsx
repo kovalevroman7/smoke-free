@@ -76,6 +76,9 @@ function App() {
   const [timeSinceLast, setTimeSinceLast] = useState(0)
   const [activeTab, setActiveTab] = useState('home')
   const [selectedDay, setSelectedDay] = useState(null)
+  const [editingIndex, setEditingIndex] = useState(null)
+  const [editHours, setEditHours] = useState('')
+  const [editMinutes, setEditMinutes] = useState('')
 
   const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
 
@@ -97,6 +100,37 @@ function App() {
       ...prev,
       cigarettes: [...prev.cigarettes, Date.now()]
     }))
+  }, [])
+
+  const startEditing = useCallback((timestamp, index) => {
+    const date = new Date(timestamp)
+    setEditHours(date.getHours().toString().padStart(2, '0'))
+    setEditMinutes(date.getMinutes().toString().padStart(2, '0'))
+    setEditingIndex(index)
+  }, [])
+
+  const saveEditedTime = useCallback(() => {
+    if (editingIndex === null) return
+
+    const hours = parseInt(editHours, 10) || 0
+    const minutes = parseInt(editMinutes, 10) || 0
+    const originalTimestamp = data.cigarettes[editingIndex]
+    const date = new Date(originalTimestamp)
+    date.setHours(hours, minutes, 0, 0)
+
+    setData(prev => ({
+      ...prev,
+      cigarettes: prev.cigarettes.map((t, i) => i === editingIndex ? date.getTime() : t)
+    }))
+    setEditingIndex(null)
+    setEditHours('')
+    setEditMinutes('')
+  }, [editingIndex, editHours, editMinutes, data.cigarettes])
+
+  const cancelEditing = useCallback(() => {
+    setEditingIndex(null)
+    setEditHours('')
+    setEditMinutes('')
   }, [])
 
   const todayKey = getDateKey(Date.now())
@@ -156,14 +190,21 @@ function App() {
 
             {todayCigarettes.length > 0 ? (
               <div className="history-list">
-                {todayCigarettes.slice(0, 5).map((time, i) => (
-                  <div key={i} className="history-item">
-                    <span className="history-time">
-                      {new Date(time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                    <span className="history-ago">{formatTimeAgo(time)}</span>
-                  </div>
-                ))}
+                {todayCigarettes.slice(0, 5).map((time, i) => {
+                  const originalIndex = data.cigarettes.indexOf(time)
+                  return (
+                    <div
+                      key={i}
+                      className="history-item clickable"
+                      onClick={() => startEditing(time, originalIndex)}
+                    >
+                      <span className="history-time">
+                        {new Date(time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="history-ago">{formatTimeAgo(time)}</span>
+                    </div>
+                  )
+                })}
                 {todayCigarettes.length > 5 && (
                   <div className="history-item" style={{ justifyContent: 'center', color: 'var(--text-secondary)' }}>
                     и ещё {todayCigarettes.length - 5}...
@@ -240,6 +281,54 @@ function App() {
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-secondary)' }}>В среднем в день</span>
               <strong>{(dailyCounts.reduce((sum, d) => sum + d.count, 0) / 7).toFixed(1)} шт</strong>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editingIndex !== null && (
+        <div className="modal-overlay" onClick={cancelEditing}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>Редактировать время</h3>
+            <div className="time-inputs">
+              <input
+                type="number"
+                className="time-input-field"
+                value={editHours}
+                onChange={e => {
+                  const val = e.target.value.slice(0, 2)
+                  if (val === '' || (parseInt(val, 10) >= 0 && parseInt(val, 10) <= 23)) {
+                    setEditHours(val)
+                  }
+                }}
+                min="0"
+                max="23"
+                placeholder="00"
+                autoFocus
+              />
+              <span className="time-separator">:</span>
+              <input
+                type="number"
+                className="time-input-field"
+                value={editMinutes}
+                onChange={e => {
+                  const val = e.target.value.slice(0, 2)
+                  if (val === '' || (parseInt(val, 10) >= 0 && parseInt(val, 10) <= 59)) {
+                    setEditMinutes(val)
+                  }
+                }}
+                min="0"
+                max="59"
+                placeholder="00"
+              />
+            </div>
+            <div className="modal-buttons">
+              <button className="modal-btn cancel" onClick={cancelEditing}>
+                Отмена
+              </button>
+              <button className="modal-btn save" onClick={saveEditedTime}>
+                Сохранить
+              </button>
             </div>
           </div>
         </div>
