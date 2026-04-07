@@ -140,6 +140,18 @@ function App() {
     setEditMinutes('')
   }, [])
 
+  const deleteCigarette = useCallback(() => {
+    if (editingIndex === null) return
+
+    setData(prev => ({
+      ...prev,
+      cigarettes: prev.cigarettes.filter((_, i) => i !== editingIndex)
+    }))
+    setEditingIndex(null)
+    setEditHours('')
+    setEditMinutes('')
+  }, [editingIndex])
+
   const openAddModal = useCallback(() => {
     const now = new Date()
     setAddDate(getDateKey(now.getTime()))
@@ -468,6 +480,9 @@ function App() {
                 Сохранить
               </button>
             </div>
+            <button className="modal-btn delete" onClick={deleteCigarette}>
+              Удалить запись
+            </button>
           </div>
         </div>
       )}
