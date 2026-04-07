@@ -294,9 +294,6 @@ body {
 
 .day-detail {
   margin-top: 20px;
-  padding: 16px;
-  background: var(--bg);
-  border-radius: 12px;
 }
 
 .day-detail-header {

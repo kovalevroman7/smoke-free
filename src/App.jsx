@@ -289,6 +289,23 @@ function App() {
         <div className="stats-card">
           <h2 style={{ marginBottom: 20 }}>Статистика за неделю</h2>
 
+          <div style={{ marginBottom: 20, padding: '16px', background: 'var(--bg)', borderRadius: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Всего за неделю</span>
+              <strong>{weeklyTotal} шт</strong>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: data.packPrice > 0 ? 8 : 0 }}>
+              <span style={{ color: 'var(--text-secondary)' }}>В среднем в день</span>
+              <strong>{(weeklyTotal / 7).toFixed(1)} шт</strong>
+            </div>
+            {data.packPrice > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Потрачено за неделю</span>
+                <strong style={{ color: 'var(--danger)' }}>{weeklyCost.toFixed(0)} ₽</strong>
+              </div>
+            )}
+          </div>
+
           <div className="chart">
             {dailyCounts.map(({ day, count }) => (
               <div
@@ -336,26 +353,34 @@ function App() {
                 <span>12:00</span>
                 <span>23:00</span>
               </div>
+
+              <div className="day-cigarettes-list">
+                <p className="day-detail-subtitle" style={{ marginTop: 20, marginBottom: 12 }}>Все записи</p>
+                {(() => {
+                  const dayCigarettes = data.cigarettes
+                    .filter(t => getDateKey(t) === selectedDay)
+                    .sort((a, b) => b - a)
+
+                  if (dayCigarettes.length === 0) {
+                    return <div className="empty-state" style={{ padding: '16px 0' }}>Нет записей</div>
+                  }
+
+                  return (
+                    <div className="history-list">
+                      {dayCigarettes.map((time, i) => (
+                        <div key={i} className="history-item">
+                          <span className="history-time">
+                            {new Date(time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                          <span className="history-ago">#{dayCigarettes.length - i}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )
+                })()}
+              </div>
             </div>
           )}
-
-          <div style={{ marginTop: 24, padding: '16px', background: 'var(--bg)', borderRadius: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Всего за неделю</span>
-              <strong>{weeklyTotal} шт</strong>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ color: 'var(--text-secondary)' }}>В среднем в день</span>
-              <strong>{(weeklyTotal / 7).toFixed(1)} шт</strong>
-            </div>
-            {data.packPrice > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Потрачено за неделю</span>
-                <strong style={{ color: 'var(--danger)' }}>{weeklyCost.toFixed(0)} ₽</strong>
-              </div>
-            )}
-          </div>
-
         </div>
       )}
 
