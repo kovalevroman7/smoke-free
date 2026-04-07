@@ -83,9 +83,8 @@ function App() {
   const [addDate, setAddDate] = useState('')
   const [addHours, setAddHours] = useState('')
   const [addMinutes, setAddMinutes] = useState('')
-  const [showSettingsModal, setShowSettingsModal] = useState(false)
-  const [settingsPackPrice, setSettingsPackPrice] = useState('')
-  const [settingsCigarettesPerPack, setSettingsCigarettesPerPack] = useState('')
+  const [settingsPackPrice, setSettingsPackPrice] = useState(data.packPrice?.toString() || '')
+  const [settingsCigarettesPerPack, setSettingsCigarettesPerPack] = useState(data.cigarettesPerPack?.toString() || '20')
 
   const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
 
@@ -180,18 +179,6 @@ function App() {
     closeAddModal()
   }, [addDate, addHours, addMinutes, closeAddModal])
 
-  const openSettingsModal = useCallback(() => {
-    setSettingsPackPrice(data.packPrice?.toString() || '')
-    setSettingsCigarettesPerPack(data.cigarettesPerPack?.toString() || '20')
-    setShowSettingsModal(true)
-  }, [data.packPrice, data.cigarettesPerPack])
-
-  const closeSettingsModal = useCallback(() => {
-    setShowSettingsModal(false)
-    setSettingsPackPrice('')
-    setSettingsCigarettesPerPack('')
-  }, [])
-
   const saveSettings = useCallback(() => {
     const price = parseFloat(settingsPackPrice) || 0
     const perPack = parseInt(settingsCigarettesPerPack, 10) || 20
@@ -201,8 +188,7 @@ function App() {
       packPrice: price,
       cigarettesPerPack: perPack
     }))
-    closeSettingsModal()
-  }, [settingsPackPrice, settingsCigarettesPerPack, closeSettingsModal])
+  }, [settingsPackPrice, settingsCigarettesPerPack])
 
   const todayKey = getDateKey(Date.now())
   const todayCount = data.cigarettes.filter(t => getDateKey(t) === todayKey).length
@@ -370,9 +356,6 @@ function App() {
             )}
           </div>
 
-          <button className="settings-btn" onClick={openSettingsModal}>
-            Настроить стоимость пачки
-          </button>
         </div>
       )}
 
@@ -487,12 +470,14 @@ function App() {
         </div>
       )}
 
-      {showSettingsModal && (
-        <div className="modal-overlay" onClick={closeSettingsModal}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <h3>Настройки</h3>
+      {activeTab === 'settings' && (
+        <div className="stats-card">
+          <h2 style={{ marginBottom: 20 }}>Настройки</h2>
+
+          <div className="settings-section">
+            <h3 className="settings-section-title">Стоимость сигарет</h3>
             <div className="settings-input-wrapper">
-              <label className="input-label">Стоимость пачки (₽)</label>
+              <label className="input-label">Цена пачки (₽)</label>
               <input
                 type="number"
                 className="settings-input"
@@ -500,7 +485,6 @@ function App() {
                 onChange={e => setSettingsPackPrice(e.target.value)}
                 placeholder="0"
                 min="0"
-                autoFocus
               />
             </div>
             <div className="settings-input-wrapper">
@@ -514,14 +498,9 @@ function App() {
                 min="1"
               />
             </div>
-            <div className="modal-buttons">
-              <button className="modal-btn cancel" onClick={closeSettingsModal}>
-                Отмена
-              </button>
-              <button className="modal-btn save" onClick={saveSettings}>
-                Сохранить
-              </button>
-            </div>
+            <button className="save-settings-btn" onClick={saveSettings}>
+              Сохранить
+            </button>
           </div>
         </div>
       )}
@@ -540,6 +519,13 @@ function App() {
         >
           <span className="nav-icon">📊</span>
           Статистика
+        </button>
+        <button
+          className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('settings')}
+        >
+          <span className="nav-icon">⚙️</span>
+          Настройки
         </button>
       </nav>
     </div>

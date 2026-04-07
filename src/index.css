@@ -573,3 +573,40 @@ body {
   outline: none;
   border-color: var(--primary);
 }
+
+.settings-section {
+  padding: 16px;
+  background: var(--bg);
+  border-radius: 12px;
+}
+
+.settings-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.save-settings-btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: white;
+  background: var(--primary);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-settings-btn:hover {
+  background: var(--primary-dark);
+}
+
+.save-settings-btn:active {
+  transform: scale(0.98);
+}
