@@ -509,3 +509,52 @@ body {
   background: var(--primary);
   color: white;
 }
+
+.settings-btn {
+  width: 100%;
+  padding: 14px;
+  margin-top: 16px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary);
+  background: rgba(16, 185, 129, 0.1);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.settings-btn:hover {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.settings-btn:active {
+  transform: scale(0.98);
+}
+
+.settings-input-wrapper {
+  margin-bottom: 16px;
+}
+
+.settings-input {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 18px;
+  font-weight: 500;
+  border: 2px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  color: var(--text);
+  -moz-appearance: textfield;
+}
+
+.settings-input::-webkit-outer-spin-button,
+.settings-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.settings-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}

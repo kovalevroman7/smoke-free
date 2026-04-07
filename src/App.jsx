@@ -5,9 +5,9 @@ const STORAGE_KEY = 'smoke-free-data'
 function loadData() {
   try {
     const data = localStorage.getItem(STORAGE_KEY)
-    return data ? JSON.parse(data) : { cigarettes: [] }
+    return data ? JSON.parse(data) : { cigarettes: [], packPrice: 0, cigarettesPerPack: 20 }
   } catch {
-    return { cigarettes: [] }
+    return { cigarettes: [], packPrice: 0, cigarettesPerPack: 20 }
   }
 }
 
@@ -83,6 +83,9 @@ function App() {
   const [addDate, setAddDate] = useState('')
   const [addHours, setAddHours] = useState('')
   const [addMinutes, setAddMinutes] = useState('')
+  const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [settingsPackPrice, setSettingsPackPrice] = useState('')
+  const [settingsCigarettesPerPack, setSettingsCigarettesPerPack] = useState('')
 
   const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
 
@@ -165,6 +168,30 @@ function App() {
     closeAddModal()
   }, [addDate, addHours, addMinutes, closeAddModal])
 
+  const openSettingsModal = useCallback(() => {
+    setSettingsPackPrice(data.packPrice?.toString() || '')
+    setSettingsCigarettesPerPack(data.cigarettesPerPack?.toString() || '20')
+    setShowSettingsModal(true)
+  }, [data.packPrice, data.cigarettesPerPack])
+
+  const closeSettingsModal = useCallback(() => {
+    setShowSettingsModal(false)
+    setSettingsPackPrice('')
+    setSettingsCigarettesPerPack('')
+  }, [])
+
+  const saveSettings = useCallback(() => {
+    const price = parseFloat(settingsPackPrice) || 0
+    const perPack = parseInt(settingsCigarettesPerPack, 10) || 20
+
+    setData(prev => ({
+      ...prev,
+      packPrice: price,
+      cigarettesPerPack: perPack
+    }))
+    closeSettingsModal()
+  }, [settingsPackPrice, settingsCigarettesPerPack, closeSettingsModal])
+
   const todayKey = getDateKey(Date.now())
   const todayCount = data.cigarettes.filter(t => getDateKey(t) === todayKey).length
 
@@ -180,6 +207,10 @@ function App() {
   }))
 
   const maxCount = Math.max(...dailyCounts.map(d => d.count), 1)
+  const weeklyTotal = dailyCounts.reduce((sum, d) => sum + d.count, 0)
+  const weeklyCost = data.packPrice && data.cigarettesPerPack
+    ? (weeklyTotal / data.cigarettesPerPack) * data.packPrice
+    : 0
 
   const todayCigarettes = data.cigarettes
     .filter(t => getDateKey(t) === todayKey)
@@ -312,13 +343,23 @@ function App() {
           <div style={{ marginTop: 24, padding: '16px', background: 'var(--bg)', borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ color: 'var(--text-secondary)' }}>Всего за неделю</span>
-              <strong>{dailyCounts.reduce((sum, d) => sum + d.count, 0)} шт</strong>
+              <strong>{weeklyTotal} шт</strong>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ color: 'var(--text-secondary)' }}>В среднем в день</span>
-              <strong>{(dailyCounts.reduce((sum, d) => sum + d.count, 0) / 7).toFixed(1)} шт</strong>
+              <strong>{(weeklyTotal / 7).toFixed(1)} шт</strong>
             </div>
+            {data.packPrice > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Потрачено за неделю</span>
+                <strong style={{ color: 'var(--danger)' }}>{weeklyCost.toFixed(0)} ₽</strong>
+              </div>
+            )}
           </div>
+
+          <button className="settings-btn" onClick={openSettingsModal}>
+            Настроить стоимость пачки
+          </button>
         </div>
       )}
 
@@ -423,6 +464,45 @@ function App() {
                 Отмена
               </button>
               <button className="modal-btn save" onClick={saveEditedTime}>
+                Сохранить
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSettingsModal && (
+        <div className="modal-overlay" onClick={closeSettingsModal}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>Настройки</h3>
+            <div className="settings-input-wrapper">
+              <label className="input-label">Стоимость пачки (₽)</label>
+              <input
+                type="number"
+                className="settings-input"
+                value={settingsPackPrice}
+                onChange={e => setSettingsPackPrice(e.target.value)}
+                placeholder="0"
+                min="0"
+                autoFocus
+              />
+            </div>
+            <div className="settings-input-wrapper">
+              <label className="input-label">Сигарет в пачке</label>
+              <input
+                type="number"
+                className="settings-input"
+                value={settingsCigarettesPerPack}
+                onChange={e => setSettingsCigarettesPerPack(e.target.value)}
+                placeholder="20"
+                min="1"
+              />
+            </div>
+            <div className="modal-buttons">
+              <button className="modal-btn cancel" onClick={closeSettingsModal}>
+                Отмена
+              </button>
+              <button className="modal-btn save" onClick={saveSettings}>
                 Сохранить
               </button>
             </div>
