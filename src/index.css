@@ -353,6 +353,13 @@ body {
   transition: height 0.3s ease;
 }
 
+.hourly-count {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
 .hourly-label {
   position: absolute;
   bottom: -18px;

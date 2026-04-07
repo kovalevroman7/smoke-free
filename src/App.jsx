@@ -322,6 +322,7 @@ function App() {
                   const maxHourly = Math.max(...hourly.map(h => h.count), 1)
                   return hourly.map(({ hour, count }) => (
                     <div key={hour} className="hourly-bar-wrapper">
+                      {count > 0 && <span className="hourly-count">{count}</span>}
                       <div
                         className="hourly-bar"
                         style={{ height: `${(count / maxHourly) * 60}px` }}
