@@ -79,6 +79,10 @@ function App() {
   const [editingIndex, setEditingIndex] = useState(null)
   const [editHours, setEditHours] = useState('')
   const [editMinutes, setEditMinutes] = useState('')
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [addDate, setAddDate] = useState('')
+  const [addHours, setAddHours] = useState('')
+  const [addMinutes, setAddMinutes] = useState('')
 
   const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
 
@@ -133,6 +137,34 @@ function App() {
     setEditMinutes('')
   }, [])
 
+  const openAddModal = useCallback(() => {
+    const now = new Date()
+    setAddDate(getDateKey(now.getTime()))
+    setAddHours(now.getHours().toString().padStart(2, '0'))
+    setAddMinutes(now.getMinutes().toString().padStart(2, '0'))
+    setShowAddModal(true)
+  }, [])
+
+  const closeAddModal = useCallback(() => {
+    setShowAddModal(false)
+    setAddDate('')
+    setAddHours('')
+    setAddMinutes('')
+  }, [])
+
+  const saveManualCigarette = useCallback(() => {
+    const hours = parseInt(addHours, 10) || 0
+    const minutes = parseInt(addMinutes, 10) || 0
+    const date = new Date(addDate)
+    date.setHours(hours, minutes, 0, 0)
+
+    setData(prev => ({
+      ...prev,
+      cigarettes: [...prev.cigarettes, date.getTime()].sort((a, b) => a - b)
+    }))
+    closeAddModal()
+  }, [addDate, addHours, addMinutes, closeAddModal])
+
   const todayKey = getDateKey(Date.now())
   const todayCount = data.cigarettes.filter(t => getDateKey(t) === todayKey).length
 
@@ -180,6 +212,10 @@ function App() {
 
           <button className="smoke-btn" onClick={addCigarette}>
             Выкурил сигарету
+          </button>
+
+          <button className="add-manual-btn" onClick={openAddModal}>
+            + Добавить вручную
           </button>
 
           <div className="stats-card">
@@ -281,6 +317,66 @@ function App() {
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
               <span style={{ color: 'var(--text-secondary)' }}>В среднем в день</span>
               <strong>{(dailyCounts.reduce((sum, d) => sum + d.count, 0) / 7).toFixed(1)} шт</strong>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showAddModal && (
+        <div className="modal-overlay" onClick={closeAddModal}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3>Добавить запись</h3>
+            <div className="date-input-wrapper">
+              <label className="input-label">Дата</label>
+              <input
+                type="date"
+                className="date-input"
+                value={addDate}
+                onChange={e => setAddDate(e.target.value)}
+                max={getDateKey(Date.now())}
+              />
+            </div>
+            <div className="time-input-wrapper">
+              <label className="input-label">Время</label>
+              <div className="time-inputs">
+                <input
+                  type="number"
+                  className="time-input-field"
+                  value={addHours}
+                  onChange={e => {
+                    const val = e.target.value.slice(0, 2)
+                    if (val === '' || (parseInt(val, 10) >= 0 && parseInt(val, 10) <= 23)) {
+                      setAddHours(val)
+                    }
+                  }}
+                  min="0"
+                  max="23"
+                  placeholder="00"
+                />
+                <span className="time-separator">:</span>
+                <input
+                  type="number"
+                  className="time-input-field"
+                  value={addMinutes}
+                  onChange={e => {
+                    const val = e.target.value.slice(0, 2)
+                    if (val === '' || (parseInt(val, 10) >= 0 && parseInt(val, 10) <= 59)) {
+                      setAddMinutes(val)
+                    }
+                  }}
+                  min="0"
+                  max="59"
+                  placeholder="00"
+                />
+              </div>
+            </div>
+            <div className="modal-buttons">
+              <button className="modal-btn cancel" onClick={closeAddModal}>
+                Отмена
+              </button>
+              <button className="modal-btn save" onClick={saveManualCigarette}>
+                Добавить
+              </button>
             </div>
           </div>
         </div>
