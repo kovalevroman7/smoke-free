@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 
 const STORAGE_KEY = 'smoke-free-data'
 
@@ -71,6 +71,64 @@ function getHourlyCounts(cigarettes, dayKey) {
   return hours
 }
 
+function SwipeableItem({ children, onEdit, onDelete, isOpen, onToggle }) {
+  const startX = useRef(0)
+  const currentX = useRef(0)
+  const containerRef = useRef(null)
+  const [offset, setOffset] = useState(0)
+  const actionsWidth = 100
+
+  const handleTouchStart = (e) => {
+    startX.current = e.touches[0].clientX
+    currentX.current = offset
+  }
+
+  const handleTouchMove = (e) => {
+    const diff = startX.current - e.touches[0].clientX
+    let newOffset = currentX.current + diff
+
+    if (newOffset < 0) newOffset = 0
+    if (newOffset > actionsWidth) newOffset = actionsWidth
+
+    setOffset(newOffset)
+  }
+
+  const handleTouchEnd = () => {
+    if (offset > actionsWidth / 2) {
+      setOffset(actionsWidth)
+      onToggle(true)
+    } else {
+      setOffset(0)
+      onToggle(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!isOpen) {
+      setOffset(0)
+    }
+  }, [isOpen])
+
+  return (
+    <div className="swipeable-container">
+      <div className="swipeable-actions">
+        <button className="swipe-btn edit" onClick={onEdit}>✏️</button>
+        <button className="swipe-btn delete" onClick={onDelete}>🗑️</button>
+      </div>
+      <div
+        ref={containerRef}
+        className="swipeable-content"
+        style={{ transform: `translateX(-${offset}px)` }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {children}
+      </div>
+    </div>
+  )
+}
+
 function App() {
   const [data, setData] = useState(loadData)
   const [timeSinceLast, setTimeSinceLast] = useState(0)
@@ -85,6 +143,7 @@ function App() {
   const [addMinutes, setAddMinutes] = useState('')
   const [settingsPackPrice, setSettingsPackPrice] = useState(data.packPrice?.toString() || '')
   const [settingsCigarettesPerPack, setSettingsCigarettesPerPack] = useState(data.cigarettesPerPack?.toString() || '20')
+  const [openSwipeIndex, setOpenSwipeIndex] = useState(null)
 
   const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
 
@@ -150,6 +209,14 @@ function App() {
     setEditHours('')
     setEditMinutes('')
   }, [editingIndex])
+
+  const deleteCigaretteByIndex = useCallback((index) => {
+    setData(prev => ({
+      ...prev,
+      cigarettes: prev.cigarettes.filter((_, i) => i !== index)
+    }))
+    setOpenSwipeIndex(null)
+  }, [])
 
   const openAddModal = useCallback(() => {
     const now = new Date()
@@ -367,14 +434,28 @@ function App() {
 
                   return (
                     <div className="history-list">
-                      {dayCigarettes.map((time, i) => (
-                        <div key={i} className="history-item">
-                          <span className="history-time">
-                            {new Date(time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          <span className="history-ago">#{dayCigarettes.length - i}</span>
-                        </div>
-                      ))}
+                      {dayCigarettes.map((time, i) => {
+                        const originalIndex = data.cigarettes.indexOf(time)
+                        return (
+                          <SwipeableItem
+                            key={time}
+                            isOpen={openSwipeIndex === originalIndex}
+                            onToggle={(isOpen) => setOpenSwipeIndex(isOpen ? originalIndex : null)}
+                            onEdit={() => {
+                              startEditing(time, originalIndex)
+                              setOpenSwipeIndex(null)
+                            }}
+                            onDelete={() => deleteCigaretteByIndex(originalIndex)}
+                          >
+                            <div className="history-item">
+                              <span className="history-time">
+                                {new Date(time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              <span className="history-ago">#{dayCigarettes.length - i}</span>
+                            </div>
+                          </SwipeableItem>
+                        )
+                      })}
                     </div>
                   )
                 })()}

@@ -607,3 +607,48 @@ body {
 .save-settings-btn:active {
   transform: scale(0.98);
 }
+
+.swipeable-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.swipeable-content {
+  position: relative;
+  z-index: 1;
+  background: var(--bg);
+  transition: transform 0.2s ease-out;
+}
+
+.swipeable-content .history-item {
+  margin: 0;
+  border-radius: 0;
+}
+
+.swipeable-actions {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  z-index: 0;
+}
+
+.swipe-btn {
+  width: 50px;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.swipe-btn.edit {
+  background: var(--primary);
+}
+
+.swipe-btn.delete {
+  background: var(--danger);
+}
