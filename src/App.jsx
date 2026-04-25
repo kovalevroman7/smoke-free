@@ -49,7 +49,10 @@ function formatTimeAgo(timestamp) {
 
 function getDateKey(timestamp) {
   const date = new Date(timestamp)
-  return date.toISOString().split('T')[0]
+  const y = date.getFullYear()
+  const m = (date.getMonth() + 1).toString().padStart(2, '0')
+  const d = date.getDate().toString().padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 function formatDate(dateKey) {
@@ -282,19 +285,16 @@ function getGoalDayStatus(goal, dayCigarettes, dayKey) {
   return 'pending'
 }
 
-function dayKeyToUtcMs(dayKey) {
-  const [y, m, d] = dayKey.split('-').map(Number)
-  return Date.UTC(y, m - 1, d)
-}
-
 function getGoalSuccessRate(goal, cigarettes, startTimestamp) {
-  const startMs = dayKeyToUtcMs(getDateKey(startTimestamp))
-  const endMs = dayKeyToUtcMs(getDateKey(Date.now()))
+  const startKey = getDateKey(startTimestamp)
+  const endKey = getDateKey(Date.now())
+  const cursor = new Date(`${startKey}T00:00:00`)
+  const end = new Date(`${endKey}T00:00:00`)
 
   let total = 0
   let success = 0
-  for (let t = startMs; t <= endMs; t += 86400000) {
-    const dayKey = new Date(t).toISOString().split('T')[0]
+  while (cursor.getTime() <= end.getTime()) {
+    const dayKey = getDateKey(cursor.getTime())
     const dayCigs = cigarettes.filter(c => getDateKey(c) === dayKey)
     const status = getGoalDayStatus(goal, dayCigs, dayKey)
     if (status === 'success') {
@@ -303,6 +303,7 @@ function getGoalSuccessRate(goal, cigarettes, startTimestamp) {
     } else if (status === 'fail') {
       total++
     }
+    cursor.setDate(cursor.getDate() + 1)
   }
   if (total === 0) return null
   return Math.round((success / total) * 100)
