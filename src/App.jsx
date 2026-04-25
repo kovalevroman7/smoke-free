@@ -137,6 +137,177 @@ function getTodaySmokedCount(cigarettes) {
   return cigarettes.filter(t => getDateKey(t) === todayKey).length
 }
 
+// === Цели ===
+const GOAL_TYPES = {
+  silence: { name: 'Окно тишины', icon: '🌙', description: 'Не курить в указанный временной промежуток' },
+  limit_before: { name: 'Лимит до времени', icon: '⏰', description: 'Не более N сигарет до указанного времени' },
+  morning_interval: { name: 'Утренний интервал', icon: '🌅', description: 'Минимальный промежуток между первыми N сигаретами дня' },
+  evening_interval: { name: 'Вечерний интервал', icon: '🌆', description: 'Минимальный промежуток между сигаретами после указанного времени' }
+}
+
+function generateGoalId() {
+  return `goal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+}
+
+function parseHHMM(str) {
+  if (!str) return 0
+  const [h, m] = str.split(':').map(Number)
+  return (h || 0) * 60 + (m || 0)
+}
+
+function getMinutesOfDay(timestamp) {
+  const d = new Date(timestamp)
+  return d.getHours() * 60 + d.getMinutes()
+}
+
+function formatDuration(minutes) {
+  if (minutes < 1) return 'меньше минуты'
+  if (minutes < 60) return `${minutes} мин`
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m > 0 ? `${h}ч ${m}м` : `${h}ч`
+}
+
+function evaluateGoal(goal, dayCigarettes, now) {
+  const sortedCigs = [...dayCigarettes].sort((a, b) => a - b)
+  const nowMinutes = new Date(now).getHours() * 60 + new Date(now).getMinutes()
+
+  if (goal.type === 'silence') {
+    const fromMin = parseHHMM(goal.params.from)
+    const toMin = parseHHMM(goal.params.to)
+    const isInWindow = (m) => fromMin <= toMin
+      ? (m >= fromMin && m < toMin)
+      : (m >= fromMin || m < toMin)
+    const violated = sortedCigs.some(t => isInWindow(getMinutesOfDay(t)))
+    if (violated) return { status: 'fail', label: `Окно тишины ${goal.params.from}–${goal.params.to}`, hint: 'нарушено' }
+    const inWindowNow = isInWindow(nowMinutes)
+    if (inWindowNow) {
+      let minutesLeft
+      if (fromMin <= toMin) {
+        minutesLeft = toMin - nowMinutes
+      } else {
+        minutesLeft = nowMinutes < toMin ? toMin - nowMinutes : (1440 - nowMinutes) + toMin
+      }
+      return { status: 'active', label: `В окне тишины ${goal.params.from}–${goal.params.to}`, hint: `до конца ${formatDuration(minutesLeft)}` }
+    }
+    let minutesUntil
+    if (nowMinutes < fromMin) {
+      minutesUntil = fromMin - nowMinutes
+    } else {
+      minutesUntil = (1440 - nowMinutes) + fromMin
+    }
+    return { status: 'pending', label: `Тишина с ${goal.params.from} до ${goal.params.to}`, hint: `через ${formatDuration(minutesUntil)}` }
+  }
+
+  if (goal.type === 'limit_before') {
+    const beforeMin = parseHHMM(goal.params.beforeTime)
+    const count = sortedCigs.filter(t => getMinutesOfDay(t) < beforeMin).length
+    const max = goal.params.maxCount
+    const passed = nowMinutes >= beforeMin
+    if (count > max) return { status: 'fail', label: `До ${goal.params.beforeTime}: ${count}/${max}`, hint: 'превышен лимит' }
+    if (passed) return { status: 'success', label: `До ${goal.params.beforeTime}: ${count}/${max}`, hint: 'выполнено' }
+    return { status: 'pending', label: `До ${goal.params.beforeTime}: ${count}/${max}`, hint: `осталось ${formatDuration(beforeMin - nowMinutes)}` }
+  }
+
+  if (goal.type === 'morning_interval') {
+    const N = goal.params.count
+    const intervalMs = goal.params.intervalMinutes * 60 * 1000
+    const firstN = sortedCigs.slice(0, N)
+    for (let i = 1; i < firstN.length; i++) {
+      if (firstN[i] - firstN[i - 1] < intervalMs) {
+        return { status: 'fail', label: `Между первыми ${N} ≥ ${goal.params.intervalMinutes} мин`, hint: 'интервал нарушен' }
+      }
+    }
+    if (firstN.length === N) {
+      return { status: 'success', label: `Первые ${N} с интервалом ${goal.params.intervalMinutes} мин`, hint: 'выполнено' }
+    }
+    if (firstN.length === 0) {
+      return { status: 'pending', label: `Первые ${N} с интервалом ${goal.params.intervalMinutes} мин`, hint: `0/${N}` }
+    }
+    const lastTime = firstN[firstN.length - 1]
+    const nextAllowed = lastTime + intervalMs
+    const remaining = Math.max(0, nextAllowed - now)
+    return {
+      status: 'pending',
+      label: `Первые ${N} с интервалом ${goal.params.intervalMinutes} мин`,
+      hint: remaining > 0
+        ? `${firstN.length}/${N}, следующая через ${formatDuration(Math.ceil(remaining / 60000))}`
+        : `${firstN.length}/${N}, можно следующую`
+    }
+  }
+
+  if (goal.type === 'evening_interval') {
+    const afterMin = parseHHMM(goal.params.afterTime)
+    const intervalMs = goal.params.intervalMinutes * 60 * 1000
+    const eveningCigs = sortedCigs.filter(t => getMinutesOfDay(t) >= afterMin)
+    for (let i = 1; i < eveningCigs.length; i++) {
+      if (eveningCigs[i] - eveningCigs[i - 1] < intervalMs) {
+        return { status: 'fail', label: `После ${goal.params.afterTime}: интервал ≥ ${goal.params.intervalMinutes} мин`, hint: 'интервал нарушен' }
+      }
+    }
+    if (nowMinutes < afterMin) {
+      return { status: 'pending', label: `После ${goal.params.afterTime}: интервал ≥ ${goal.params.intervalMinutes} мин`, hint: `активна с ${goal.params.afterTime}` }
+    }
+    if (eveningCigs.length === 0) {
+      return { status: 'active', label: `После ${goal.params.afterTime}: интервал ≥ ${goal.params.intervalMinutes} мин`, hint: 'пока 0 сигарет' }
+    }
+    const lastTime = eveningCigs[eveningCigs.length - 1]
+    const nextAllowed = lastTime + intervalMs
+    const remaining = Math.max(0, nextAllowed - now)
+    return {
+      status: 'active',
+      label: `После ${goal.params.afterTime}: интервал ≥ ${goal.params.intervalMinutes} мин`,
+      hint: remaining > 0
+        ? `следующая через ${formatDuration(Math.ceil(remaining / 60000))}`
+        : 'можно следующую'
+    }
+  }
+
+  return { status: 'pending', label: '—', hint: '' }
+}
+
+function checkGoalViolationOnAdd(goal, dayCigarettes, addTime) {
+  const newCigs = [...dayCigarettes, addTime].sort((a, b) => a - b)
+  const result = evaluateGoal(goal, newCigs, addTime)
+  return result.status === 'fail'
+}
+
+function getGoalDayStatus(goal, dayCigarettes, dayKey) {
+  const today = getDateKey(Date.now())
+  const isToday = dayKey === today
+  const evalTime = isToday ? Date.now() : new Date(dayKey).setHours(23, 59, 59, 999)
+  const result = evaluateGoal(goal, dayCigarettes, evalTime)
+  if (result.status === 'fail') return 'fail'
+  if (!isToday) return 'success'
+  return 'pending'
+}
+
+function dayKeyToUtcMs(dayKey) {
+  const [y, m, d] = dayKey.split('-').map(Number)
+  return Date.UTC(y, m - 1, d)
+}
+
+function getGoalSuccessRate(goal, cigarettes, startTimestamp) {
+  const startMs = dayKeyToUtcMs(getDateKey(startTimestamp))
+  const endMs = dayKeyToUtcMs(getDateKey(Date.now()))
+
+  let total = 0
+  let success = 0
+  for (let t = startMs; t <= endMs; t += 86400000) {
+    const dayKey = new Date(t).toISOString().split('T')[0]
+    const dayCigs = cigarettes.filter(c => getDateKey(c) === dayKey)
+    const status = getGoalDayStatus(goal, dayCigs, dayKey)
+    if (status === 'success') {
+      total++
+      success++
+    } else if (status === 'fail') {
+      total++
+    }
+  }
+  if (total === 0) return null
+  return Math.round((success / total) * 100)
+}
+
 function SwipeableItem({ children, onEdit, onDelete, isOpen, onToggle }) {
   const startX = useRef(0)
   const currentX = useRef(0)
@@ -214,12 +385,40 @@ function App() {
   // Состояния для режима сокращения
   const [mode, setMode] = useState(data.mode || 'observation')
   const [showReductionSetupModal, setShowReductionSetupModal] = useState(false)
+  const [setupProgramType, setSetupProgramType] = useState('linear')
   const [setupCurrentSmokes, setSetupCurrentSmokes] = useState('')
   const [setupTargetSmokes, setSetupTargetSmokes] = useState('')
   const [setupTotalDays, setSetupTotalDays] = useState('')
   const [setupWakeHours, setSetupWakeHours] = useState('16')
   const [setupReductionType, setSetupReductionType] = useState('linear')
   const [countdownTime, setCountdownTime] = useState(0)
+
+  // Состояния для целей
+  const [showGoalModal, setShowGoalModal] = useState(false)
+  const [editingGoalId, setEditingGoalId] = useState(null)
+  const [goalForm, setGoalForm] = useState({
+    type: 'silence',
+    from: '22:00',
+    to: '08:00',
+    beforeTime: '11:00',
+    maxCount: '1',
+    count: '3',
+    intervalMinutes: '30',
+    afterTime: '20:00'
+  })
+  const [openGoalSwipeId, setOpenGoalSwipeId] = useState(null)
+  const [toast, setToast] = useState(null)
+  const toastTimerRef = useRef(null)
+
+  const showToast = useCallback((message) => {
+    setToast(message)
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500)
+  }, [])
+
+  useEffect(() => () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+  }, [])
 
   const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
 
@@ -229,7 +428,7 @@ function App() {
         if (lastCigarette) {
           setTimeSinceLast(Date.now() - lastCigarette)
         }
-      } else if (mode === 'reduction' && data.reductionConfig?.isConfigured) {
+      } else if (mode === 'reduction' && data.reductionConfig?.isConfigured && data.reductionConfig.type !== 'goals') {
         const currentDay = getCurrentProgramDay(data.reductionConfig.startDate)
         const nextAllowed = getNextAllowedTime(data.cigarettes, data.reductionConfig, currentDay)
         const remaining = nextAllowed - Date.now()
@@ -239,16 +438,42 @@ function App() {
     return () => clearInterval(interval)
   }, [lastCigarette, mode, data.reductionConfig, data.cigarettes])
 
+  // Тик для пересчёта статусов целей
+  const [, setGoalsTick] = useState(0)
+  useEffect(() => {
+    if (mode !== 'reduction' || data.reductionConfig?.type !== 'goals') return
+    const interval = setInterval(() => setGoalsTick(t => t + 1), 30000)
+    return () => clearInterval(interval)
+  }, [mode, data.reductionConfig?.type])
+
+  // Если вкладка «Цели» скрылась — переключиться на главную
+  useEffect(() => {
+    if (activeTab === 'goals' && (mode !== 'reduction' || data.reductionConfig?.type !== 'goals')) {
+      setActiveTab('home')
+    }
+  }, [activeTab, mode, data.reductionConfig?.type])
+
   useEffect(() => {
     saveData(data)
   }, [data])
 
   const addCigarette = useCallback(() => {
-    setData(prev => ({
-      ...prev,
-      cigarettes: [...prev.cigarettes, Date.now()]
-    }))
-  }, [])
+    const now = Date.now()
+    setData(prev => {
+      if (prev.mode === 'reduction' && prev.reductionConfig?.type === 'goals' && prev.reductionConfig.goals?.length) {
+        const todayKey = getDateKey(now)
+        const todayCigs = prev.cigarettes.filter(t => getDateKey(t) === todayKey)
+        const violated = prev.reductionConfig.goals
+          .filter(g => g.enabled)
+          .filter(g => checkGoalViolationOnAdd(g, todayCigs, now))
+        if (violated.length > 0) {
+          const names = violated.map(g => GOAL_TYPES[g.type]?.name || g.type).join(', ')
+          setTimeout(() => showToast(`Нарушает цель: ${names}`), 0)
+        }
+      }
+      return { ...prev, cigarettes: [...prev.cigarettes, now] }
+    })
+  }, [showToast])
 
   const startEditing = useCallback((timestamp, index) => {
     const date = new Date(timestamp)
@@ -341,15 +566,24 @@ function App() {
   }, [settingsPackPrice, settingsCigarettesPerPack])
 
   const saveReductionConfig = useCallback(() => {
-    const config = {
-      currentSmokes: parseInt(setupCurrentSmokes, 10) || 20,
-      targetSmokes: parseInt(setupTargetSmokes, 10) || 0,
-      totalDays: parseInt(setupTotalDays, 10) || 30,
-      wakeHours: parseInt(setupWakeHours, 10) || 16,
-      reductionType: setupReductionType,
-      startDate: Date.now(),
-      isConfigured: true
-    }
+    const config = setupProgramType === 'linear'
+      ? {
+          type: 'linear',
+          currentSmokes: parseInt(setupCurrentSmokes, 10) || 20,
+          targetSmokes: parseInt(setupTargetSmokes, 10) || 0,
+          totalDays: parseInt(setupTotalDays, 10) || 30,
+          wakeHours: parseInt(setupWakeHours, 10) || 16,
+          reductionType: setupReductionType,
+          startDate: Date.now(),
+          isConfigured: true
+        }
+      : {
+          type: 'goals',
+          goals: [],
+          goalHistory: {},
+          startDate: Date.now(),
+          isConfigured: true
+        }
 
     setData(prev => ({
       ...prev,
@@ -357,17 +591,123 @@ function App() {
     }))
 
     setShowReductionSetupModal(false)
+    setSetupProgramType('linear')
     setSetupCurrentSmokes('')
     setSetupTargetSmokes('')
     setSetupTotalDays('')
     setSetupWakeHours('16')
     setSetupReductionType('linear')
-  }, [setupCurrentSmokes, setupTargetSmokes, setupTotalDays, setupWakeHours, setupReductionType])
+  }, [setupProgramType, setupCurrentSmokes, setupTargetSmokes, setupTotalDays, setupWakeHours, setupReductionType])
 
   const resetReductionConfig = useCallback(() => {
     setData(prev => ({
       ...prev,
       reductionConfig: null
+    }))
+  }, [])
+
+  const switchProgramType = useCallback((newType) => {
+    setData(prev => {
+      const base = newType === 'linear'
+        ? {
+            type: 'linear',
+            currentSmokes: prev.reductionConfig?.currentSmokes || 20,
+            targetSmokes: prev.reductionConfig?.targetSmokes ?? 0,
+            totalDays: prev.reductionConfig?.totalDays || 30,
+            wakeHours: prev.reductionConfig?.wakeHours || 16,
+            reductionType: prev.reductionConfig?.reductionType || 'linear',
+            startDate: Date.now(),
+            isConfigured: true
+          }
+        : {
+            type: 'goals',
+            goals: [],
+            goalHistory: {},
+            startDate: Date.now(),
+            isConfigured: true
+          }
+      return { ...prev, reductionConfig: base }
+    })
+  }, [])
+
+  const openCreateGoal = useCallback(() => {
+    setEditingGoalId(null)
+    setGoalForm({
+      type: 'silence',
+      from: '22:00',
+      to: '08:00',
+      beforeTime: '11:00',
+      maxCount: '1',
+      count: '3',
+      intervalMinutes: '30',
+      afterTime: '20:00'
+    })
+    setShowGoalModal(true)
+  }, [])
+
+  const openEditGoal = useCallback((goal) => {
+    setEditingGoalId(goal.id)
+    setGoalForm({
+      type: goal.type,
+      from: goal.params.from || '22:00',
+      to: goal.params.to || '08:00',
+      beforeTime: goal.params.beforeTime || '11:00',
+      maxCount: goal.params.maxCount?.toString() || '1',
+      count: goal.params.count?.toString() || '3',
+      intervalMinutes: goal.params.intervalMinutes?.toString() || '30',
+      afterTime: goal.params.afterTime || '20:00'
+    })
+    setShowGoalModal(true)
+    setOpenGoalSwipeId(null)
+  }, [])
+
+  const saveGoal = useCallback(() => {
+    let params = {}
+    if (goalForm.type === 'silence') {
+      params = { from: goalForm.from, to: goalForm.to }
+    } else if (goalForm.type === 'limit_before') {
+      params = { beforeTime: goalForm.beforeTime, maxCount: parseInt(goalForm.maxCount, 10) || 1 }
+    } else if (goalForm.type === 'morning_interval') {
+      params = { count: parseInt(goalForm.count, 10) || 3, intervalMinutes: parseInt(goalForm.intervalMinutes, 10) || 30 }
+    } else if (goalForm.type === 'evening_interval') {
+      params = { afterTime: goalForm.afterTime, intervalMinutes: parseInt(goalForm.intervalMinutes, 10) || 30 }
+    }
+
+    setData(prev => {
+      const goals = prev.reductionConfig?.goals || []
+      let nextGoals
+      if (editingGoalId) {
+        nextGoals = goals.map(g => g.id === editingGoalId ? { ...g, type: goalForm.type, params } : g)
+      } else {
+        nextGoals = [...goals, { id: generateGoalId(), type: goalForm.type, enabled: true, params }]
+      }
+      return { ...prev, reductionConfig: { ...prev.reductionConfig, goals: nextGoals } }
+    })
+
+    setShowGoalModal(false)
+    setEditingGoalId(null)
+  }, [goalForm, editingGoalId])
+
+  const deleteGoal = useCallback((goalId) => {
+    setData(prev => ({
+      ...prev,
+      reductionConfig: {
+        ...prev.reductionConfig,
+        goals: (prev.reductionConfig?.goals || []).filter(g => g.id !== goalId)
+      }
+    }))
+    setOpenGoalSwipeId(null)
+  }, [])
+
+  const toggleGoalEnabled = useCallback((goalId) => {
+    setData(prev => ({
+      ...prev,
+      reductionConfig: {
+        ...prev.reductionConfig,
+        goals: (prev.reductionConfig?.goals || []).map(g =>
+          g.id === goalId ? { ...g, enabled: !g.enabled } : g
+        )
+      }
     }))
   }, [])
 
@@ -510,6 +850,93 @@ function App() {
                     Настроить программу
                   </button>
                 </div>
+              ) : data.reductionConfig.type === 'goals' ? (
+                <>
+                  {/* Карточка активных целей */}
+                  {(() => {
+                    const goals = data.reductionConfig.goals || []
+                    const enabled = goals.filter(g => g.enabled)
+                    if (enabled.length === 0) {
+                      return (
+                        <div className="reduction-setup-card">
+                          <div className="setup-icon">🎯</div>
+                          <h2>Цели не заданы</h2>
+                          <p>Перейдите во вкладку «Цели», чтобы создать первую цель</p>
+                          <button className="setup-btn" onClick={() => setActiveTab('goals')}>
+                            К целям
+                          </button>
+                        </div>
+                      )
+                    }
+                    return (
+                      <div className="goals-card">
+                        <div className="goals-card-header">
+                          <h2>Активные цели</h2>
+                          <span className="goals-card-count">{enabled.length}</span>
+                        </div>
+                        <div className="goal-widgets">
+                          {enabled.map(goal => {
+                            const result = evaluateGoal(goal, todayCigarettes, Date.now())
+                            const meta = GOAL_TYPES[goal.type]
+                            return (
+                              <div key={goal.id} className={`goal-widget goal-status-${result.status}`}>
+                                <div className="goal-widget-icon">{meta?.icon}</div>
+                                <div className="goal-widget-body">
+                                  <div className="goal-widget-label">{result.label}</div>
+                                  <div className="goal-widget-hint">{result.hint}</div>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })()}
+
+                  <button className="smoke-btn" onClick={addCigarette}>
+                    Выкурил сигарету
+                  </button>
+
+                  <button className="add-manual-btn" onClick={openAddModal}>
+                    + Добавить вручную
+                  </button>
+
+                  <div className="stats-card">
+                    <div className="stats-header">
+                      <h2>Сегодня</h2>
+                      <span className="today-count">{todaySmoked} шт</span>
+                    </div>
+
+                    {todayCigarettes.length > 0 ? (
+                      <div className="history-list">
+                        {todayCigarettes.slice(0, 5).map((time, i) => {
+                          const originalIndex = data.cigarettes.indexOf(time)
+                          return (
+                            <div
+                              key={i}
+                              className="history-item clickable"
+                              onClick={() => startEditing(time, originalIndex)}
+                            >
+                              <span className="history-time">
+                                {new Date(time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                              <span className="history-ago">{formatTimeAgo(time)}</span>
+                            </div>
+                          )
+                        })}
+                        {todayCigarettes.length > 5 && (
+                          <div className="history-item" style={{ justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                            и ещё {todayCigarettes.length - 5}...
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="empty-state">
+                        Пока нет записей за сегодня
+                      </div>
+                    )}
+                  </div>
+                </>
               ) : (
                 <>
                   {/* Индикатор дня программы */}
@@ -645,6 +1072,45 @@ function App() {
             ))}
           </div>
 
+          {mode === 'reduction' && data.reductionConfig?.type === 'goals' && (data.reductionConfig.goals || []).length > 0 && (() => {
+            const goals = data.reductionConfig.goals
+            const rates = goals.map(g => ({
+              goal: g,
+              rate: getGoalSuccessRate(g, data.cigarettes, data.reductionConfig.startDate)
+            }))
+            const valid = rates.filter(r => r.rate !== null)
+            const overall = valid.length > 0
+              ? Math.round(valid.reduce((s, r) => s + r.rate, 0) / valid.length)
+              : null
+            const rateClass = (r) => r === null ? '' : r >= 80 ? 'high' : r >= 50 ? 'mid' : 'low'
+            return (
+              <div className="goals-stats-block">
+                <div className="goals-stats-row">
+                  <span className="goals-stats-label" style={{ fontWeight: 600, color: 'var(--text)' }}>
+                    Успешных дней по целям
+                  </span>
+                  <span className={`goals-stats-percent ${rateClass(overall)}`}>
+                    {overall === null ? '—' : `${overall}%`}
+                  </span>
+                </div>
+                {rates.map(({ goal, rate }) => {
+                  const meta = GOAL_TYPES[goal.type]
+                  return (
+                    <div key={goal.id} className="goals-stats-row">
+                      <span className="goals-stats-label">
+                        <span>{meta?.icon}</span>
+                        <span>{meta?.name}</span>
+                      </span>
+                      <span className={`goals-stats-percent ${rateClass(rate)}`}>
+                        {rate === null ? '—' : `${rate}%`}
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )
+          })()}
+
           {selectedDay && (
             <div className="day-detail">
               <div className="day-detail-header">
@@ -674,6 +1140,31 @@ function App() {
                 <span>12:00</span>
                 <span>23:00</span>
               </div>
+
+              {mode === 'reduction' && data.reductionConfig?.type === 'goals' && (data.reductionConfig.goals || []).length > 0 && (() => {
+                const dayCigs = data.cigarettes.filter(t => getDateKey(t) === selectedDay)
+                const startKey = getDateKey(data.reductionConfig.startDate)
+                if (selectedDay < startKey) return null
+                return (
+                  <div>
+                    <p className="day-detail-subtitle" style={{ marginTop: 20, marginBottom: 8 }}>Цели за день</p>
+                    <div className="day-goals-list">
+                      {data.reductionConfig.goals.map(goal => {
+                        const status = getGoalDayStatus(goal, dayCigs, selectedDay)
+                        const meta = GOAL_TYPES[goal.type]
+                        const symbol = status === 'success' ? '✓' : status === 'fail' ? '✗' : '…'
+                        return (
+                          <div key={goal.id} className={`day-goal-item ${status}`}>
+                            <span>{meta?.icon}</span>
+                            <span style={{ flex: 1 }}>{meta?.name}</span>
+                            <span style={{ fontWeight: 600 }}>{symbol}</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
 
               <div className="day-cigarettes-list">
                 <p className="day-detail-subtitle" style={{ marginTop: 20, marginBottom: 12 }}>Все записи</p>
@@ -716,6 +1207,231 @@ function App() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'goals' && (
+        <div className="stats-card">
+          <h2 style={{ marginBottom: 8 }}>Цели</h2>
+          <p className="day-detail-subtitle" style={{ marginBottom: 16 }}>
+            Гибкие правила вместо жёсткого лимита
+          </p>
+
+          {(() => {
+            const goals = data.reductionConfig?.goals || []
+            if (goals.length === 0) {
+              return (
+                <div className="goals-onboarding">
+                  <div className="setup-icon">🎯</div>
+                  <h3 style={{ fontSize: 18, marginBottom: 12 }}>Что такое цели?</h3>
+                  <p style={{ marginBottom: 16, lineHeight: 1.5 }}>
+                    Цели — это гибкие правила курения, которые помогают постепенно изменить привычки без жёсткого ограничения количества.
+                  </p>
+                  <div className="goal-examples">
+                    <div className="goal-example">
+                      <span className="goal-example-icon">🌙</span>
+                      <div>
+                        <strong>Окно тишины</strong>
+                        <p>Не курить с 22:00 до 8:00</p>
+                      </div>
+                    </div>
+                    <div className="goal-example">
+                      <span className="goal-example-icon">⏰</span>
+                      <div>
+                        <strong>Лимит до времени</strong>
+                        <p>Не более 1 сигареты до 11:00</p>
+                      </div>
+                    </div>
+                    <div className="goal-example">
+                      <span className="goal-example-icon">🌅</span>
+                      <div>
+                        <strong>Утренний интервал</strong>
+                        <p>Между первыми 3 — минимум 30 мин</p>
+                      </div>
+                    </div>
+                    <div className="goal-example">
+                      <span className="goal-example-icon">🌆</span>
+                      <div>
+                        <strong>Вечерний интервал</strong>
+                        <p>После 20:00 — минимум 30 мин</p>
+                      </div>
+                    </div>
+                  </div>
+                  <button className="setup-btn" style={{ marginTop: 16 }} onClick={openCreateGoal}>
+                    Создать первую цель
+                  </button>
+                </div>
+              )
+            }
+            return (
+              <>
+                <div className="goals-list">
+                  {goals.map(goal => {
+                    const meta = GOAL_TYPES[goal.type]
+                    const result = evaluateGoal(goal, todayCigarettes, Date.now())
+                    return (
+                      <SwipeableItem
+                        key={goal.id}
+                        isOpen={openGoalSwipeId === goal.id}
+                        onToggle={(isOpen) => setOpenGoalSwipeId(isOpen ? goal.id : null)}
+                        onEdit={() => openEditGoal(goal)}
+                        onDelete={() => deleteGoal(goal.id)}
+                      >
+                        <div className={`goal-row ${goal.enabled ? '' : 'goal-disabled'}`}>
+                          <div className="goal-row-icon">{meta?.icon}</div>
+                          <div className="goal-row-body">
+                            <div className="goal-row-label">{result.label}</div>
+                            <div className="goal-row-hint">{goal.enabled ? result.hint : 'отключена'}</div>
+                          </div>
+                          <label className="goal-toggle" onClick={e => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={goal.enabled}
+                              onChange={() => toggleGoalEnabled(goal.id)}
+                            />
+                            <span className="goal-toggle-slider" />
+                          </label>
+                        </div>
+                      </SwipeableItem>
+                    )
+                  })}
+                </div>
+                <button className="save-settings-btn" style={{ marginTop: 16 }} onClick={openCreateGoal}>
+                  + Добавить цель
+                </button>
+              </>
+            )
+          })()}
+        </div>
+      )}
+
+      {showGoalModal && (
+        <div className="modal-overlay" onClick={() => setShowGoalModal(false)}>
+          <div className="modal modal-large" onClick={e => e.stopPropagation()}>
+            <h3>{editingGoalId ? 'Редактировать цель' : 'Новая цель'}</h3>
+
+            <div className="settings-input-wrapper">
+              <label className="input-label">Тип цели</label>
+              <div className="goal-type-grid">
+                {Object.entries(GOAL_TYPES).map(([key, meta]) => (
+                  <button
+                    key={key}
+                    className={`goal-type-btn ${goalForm.type === key ? 'active' : ''}`}
+                    onClick={() => setGoalForm(f => ({ ...f, type: key }))}
+                  >
+                    <span className="goal-type-icon">{meta.icon}</span>
+                    <span className="goal-type-name">{meta.name}</span>
+                  </button>
+                ))}
+              </div>
+              <p className="type-hint">{GOAL_TYPES[goalForm.type]?.description}</p>
+            </div>
+
+            {goalForm.type === 'silence' && (
+              <>
+                <div className="settings-input-wrapper">
+                  <label className="input-label">Не курить с</label>
+                  <input
+                    type="time"
+                    className="settings-input"
+                    value={goalForm.from}
+                    onChange={e => setGoalForm(f => ({ ...f, from: e.target.value }))}
+                  />
+                </div>
+                <div className="settings-input-wrapper">
+                  <label className="input-label">До</label>
+                  <input
+                    type="time"
+                    className="settings-input"
+                    value={goalForm.to}
+                    onChange={e => setGoalForm(f => ({ ...f, to: e.target.value }))}
+                  />
+                </div>
+              </>
+            )}
+
+            {goalForm.type === 'limit_before' && (
+              <>
+                <div className="settings-input-wrapper">
+                  <label className="input-label">Максимум сигарет</label>
+                  <input
+                    type="number"
+                    className="settings-input"
+                    value={goalForm.maxCount}
+                    onChange={e => setGoalForm(f => ({ ...f, maxCount: e.target.value }))}
+                    min="0"
+                  />
+                </div>
+                <div className="settings-input-wrapper">
+                  <label className="input-label">До времени</label>
+                  <input
+                    type="time"
+                    className="settings-input"
+                    value={goalForm.beforeTime}
+                    onChange={e => setGoalForm(f => ({ ...f, beforeTime: e.target.value }))}
+                  />
+                </div>
+              </>
+            )}
+
+            {goalForm.type === 'morning_interval' && (
+              <>
+                <div className="settings-input-wrapper">
+                  <label className="input-label">Количество первых сигарет</label>
+                  <input
+                    type="number"
+                    className="settings-input"
+                    value={goalForm.count}
+                    onChange={e => setGoalForm(f => ({ ...f, count: e.target.value }))}
+                    min="2"
+                  />
+                </div>
+                <div className="settings-input-wrapper">
+                  <label className="input-label">Минимальный интервал (мин)</label>
+                  <input
+                    type="number"
+                    className="settings-input"
+                    value={goalForm.intervalMinutes}
+                    onChange={e => setGoalForm(f => ({ ...f, intervalMinutes: e.target.value }))}
+                    min="1"
+                  />
+                </div>
+              </>
+            )}
+
+            {goalForm.type === 'evening_interval' && (
+              <>
+                <div className="settings-input-wrapper">
+                  <label className="input-label">Активна после</label>
+                  <input
+                    type="time"
+                    className="settings-input"
+                    value={goalForm.afterTime}
+                    onChange={e => setGoalForm(f => ({ ...f, afterTime: e.target.value }))}
+                  />
+                </div>
+                <div className="settings-input-wrapper">
+                  <label className="input-label">Минимальный интервал (мин)</label>
+                  <input
+                    type="number"
+                    className="settings-input"
+                    value={goalForm.intervalMinutes}
+                    onChange={e => setGoalForm(f => ({ ...f, intervalMinutes: e.target.value }))}
+                    min="1"
+                  />
+                </div>
+              </>
+            )}
+
+            <div className="modal-buttons">
+              <button className="modal-btn cancel" onClick={() => setShowGoalModal(false)}>
+                Отмена
+              </button>
+              <button className="modal-btn save" onClick={saveGoal}>
+                {editingGoalId ? 'Сохранить' : 'Создать'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -837,76 +1553,107 @@ function App() {
             <h3>Настройка программы</h3>
 
             <div className="settings-input-wrapper">
-              <label className="input-label">Сигарет в день сейчас</label>
-              <input
-                type="number"
-                className="settings-input"
-                value={setupCurrentSmokes}
-                onChange={e => setSetupCurrentSmokes(e.target.value)}
-                placeholder="20"
-                min="1"
-              />
-            </div>
-
-            <div className="settings-input-wrapper">
-              <label className="input-label">Цель (сигарет в день)</label>
-              <input
-                type="number"
-                className="settings-input"
-                value={setupTargetSmokes}
-                onChange={e => setSetupTargetSmokes(e.target.value)}
-                placeholder="5"
-                min="0"
-              />
-            </div>
-
-            <div className="settings-input-wrapper">
-              <label className="input-label">Период сокращения (дней)</label>
-              <input
-                type="number"
-                className="settings-input"
-                value={setupTotalDays}
-                onChange={e => setSetupTotalDays(e.target.value)}
-                placeholder="30"
-                min="1"
-              />
-            </div>
-
-            <div className="settings-input-wrapper">
-              <label className="input-label">Часы бодрствования</label>
-              <input
-                type="number"
-                className="settings-input"
-                value={setupWakeHours}
-                onChange={e => setSetupWakeHours(e.target.value)}
-                placeholder="16"
-                min="1"
-                max="24"
-              />
-            </div>
-
-            <div className="settings-input-wrapper">
-              <label className="input-label">Тип сокращения</label>
+              <label className="input-label">Тип программы</label>
               <div className="reduction-type-selector">
                 <button
-                  className={`type-btn ${setupReductionType === 'linear' ? 'active' : ''}`}
-                  onClick={() => setSetupReductionType('linear')}
+                  className={`type-btn ${setupProgramType === 'linear' ? 'active' : ''}`}
+                  onClick={() => setSetupProgramType('linear')}
                 >
-                  Линейное
+                  Линейный
                 </button>
                 <button
-                  className={`type-btn ${setupReductionType === 'stepped' ? 'active' : ''}`}
-                  onClick={() => setSetupReductionType('stepped')}
+                  className={`type-btn ${setupProgramType === 'goals' ? 'active' : ''}`}
+                  onClick={() => setSetupProgramType('goals')}
                 >
-                  Ступенчатое
+                  По целям
                 </button>
               </div>
               <p className="type-hint">
-                {setupReductionType === 'linear'
-                  ? 'Плавное уменьшение каждый день'
-                  : 'Уменьшение на 1 сигарету каждые N дней'}
+                {setupProgramType === 'linear'
+                  ? 'Единый дневной лимит и таймер между сигаретами'
+                  : 'Гибкие цели: окно тишины, лимиты, интервалы'}
               </p>
             </div>
+
+            {setupProgramType === 'linear' ? (
+              <>
+                <div className="settings-input-wrapper">
+                  <label className="input-label">Сигарет в день сейчас</label>
+                  <input
+                    type="number"
+                    className="settings-input"
+                    value={setupCurrentSmokes}
+                    onChange={e => setSetupCurrentSmokes(e.target.value)}
+                    placeholder="20"
+                    min="1"
+                  />
+                </div>
+
+                <div className="settings-input-wrapper">
+                  <label className="input-label">Цель (сигарет в день)</label>
+                  <input
+                    type="number"
+                    className="settings-input"
+                    value={setupTargetSmokes}
+                    onChange={e => setSetupTargetSmokes(e.target.value)}
+                    placeholder="5"
+                    min="0"
+                  />
+                </div>
+
+                <div className="settings-input-wrapper">
+                  <label className="input-label">Период сокращения (дней)</label>
+                  <input
+                    type="number"
+                    className="settings-input"
+                    value={setupTotalDays}
+                    onChange={e => setSetupTotalDays(e.target.value)}
+                    placeholder="30"
+                    min="1"
+                  />
+                </div>
+
+                <div className="settings-input-wrapper">
+                  <label className="input-label">Часы бодрствования</label>
+                  <input
+                    type="number"
+                    className="settings-input"
+                    value={setupWakeHours}
+                    onChange={e => setSetupWakeHours(e.target.value)}
+                    placeholder="16"
+                    min="1"
+                    max="24"
+                  />
+                </div>
+
+                <div className="settings-input-wrapper">
+                  <label className="input-label">Тип сокращения</label>
+                  <div className="reduction-type-selector">
+                    <button
+                      className={`type-btn ${setupReductionType === 'linear' ? 'active' : ''}`}
+                      onClick={() => setSetupReductionType('linear')}
+                    >
+                      Линейное
+                    </button>
+                    <button
+                      className={`type-btn ${setupReductionType === 'stepped' ? 'active' : ''}`}
+                      onClick={() => setSetupReductionType('stepped')}
+                    >
+                      Ступенчатое
+                    </button>
+                  </div>
+                  <p className="type-hint">
+                    {setupReductionType === 'linear'
+                      ? 'Плавное уменьшение каждый день'
+                      : 'Уменьшение на 1 сигарету каждые N дней'}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <p className="type-hint" style={{ marginBottom: 16 }}>
+                После запуска программы перейдите во вкладку «Цели», чтобы добавить первую цель.
+              </p>
+            )}
 
             <div className="modal-buttons">
               <button
@@ -960,9 +1707,38 @@ function App() {
             <div className="settings-section" style={{ marginTop: 20 }}>
               <h3 className="settings-section-title">Программа сокращения</h3>
               <p style={{ marginBottom: 16, color: 'var(--text-secondary)', fontSize: 14 }}>
-                День {currentProgramDay} из {data.reductionConfig.totalDays}
+                {data.reductionConfig.type === 'goals'
+                  ? `Тип: По целям, день ${getCurrentProgramDay(data.reductionConfig.startDate)}`
+                  : `Тип: Линейный, день ${currentProgramDay} из ${data.reductionConfig.totalDays}`}
               </p>
-              <button className="modal-btn delete" onClick={resetReductionConfig}>
+
+              <label className="input-label">Сменить тип программы</label>
+              <div className="reduction-type-selector">
+                <button
+                  className={`type-btn ${data.reductionConfig.type !== 'goals' ? 'active' : ''}`}
+                  onClick={() => {
+                    if (data.reductionConfig.type !== 'goals') return
+                    if (confirm('Сменить на линейный? Прогресс программы (день N) будет сброшен.')) {
+                      switchProgramType('linear')
+                    }
+                  }}
+                >
+                  Линейный
+                </button>
+                <button
+                  className={`type-btn ${data.reductionConfig.type === 'goals' ? 'active' : ''}`}
+                  onClick={() => {
+                    if (data.reductionConfig.type === 'goals') return
+                    if (confirm('Сменить на цели? Прогресс программы (день N) будет сброшен.')) {
+                      switchProgramType('goals')
+                    }
+                  }}
+                >
+                  По целям
+                </button>
+              </div>
+
+              <button className="modal-btn delete" style={{ marginTop: 16 }} onClick={resetReductionConfig}>
                 Сбросить программу
               </button>
             </div>
@@ -985,6 +1761,15 @@ function App() {
           <span className="nav-icon">📊</span>
           Статистика
         </button>
+        {mode === 'reduction' && data.reductionConfig?.type === 'goals' && (
+          <button
+            className={`nav-item ${activeTab === 'goals' ? 'active' : ''}`}
+            onClick={() => setActiveTab('goals')}
+          >
+            <span className="nav-icon">🎯</span>
+            Цели
+          </button>
+        )}
         <button
           className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
           onClick={() => setActiveTab('settings')}
@@ -993,6 +1778,10 @@ function App() {
           Настройки
         </button>
       </nav>
+
+      {toast && (
+        <div className="toast">{toast}</div>
+      )}
     </div>
   )
 }

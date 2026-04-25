@@ -838,3 +838,345 @@ body {
 .modal.modal-large {
   max-width: 360px;
 }
+
+/* === Цели === */
+
+.goals-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.goals-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.goals-card-header h2 {
+  font-size: 16px;
+  color: var(--text-secondary);
+}
+
+.goals-card-count {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--primary);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.goal-widgets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.goal-widget {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border-radius: 12px;
+  border-left: 4px solid var(--text-secondary);
+}
+
+.goal-widget-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.goal-widget-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.goal-widget-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.goal-widget-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.goal-widget.goal-status-success {
+  border-left-color: var(--primary);
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.goal-widget.goal-status-active {
+  border-left-color: var(--primary);
+}
+
+.goal-widget.goal-status-pending {
+  border-left-color: #f59e0b;
+}
+
+.goal-widget.goal-status-fail {
+  border-left-color: var(--danger);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+/* Список целей во вкладке */
+.goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.goal-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg);
+}
+
+.goal-row.goal-disabled {
+  opacity: 0.5;
+}
+
+.goal-row-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.goal-row-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.goal-row-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.goal-row-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Toggle */
+.goal-toggle {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.goal-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.goal-toggle-slider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--border);
+  border-radius: 22px;
+  transition: background 0.2s;
+}
+
+.goal-toggle-slider::before {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.goal-toggle input:checked + .goal-toggle-slider {
+  background: var(--primary);
+}
+
+.goal-toggle input:checked + .goal-toggle-slider::before {
+  transform: translateX(18px);
+}
+
+/* Онбординг целей */
+.goals-onboarding {
+  text-align: center;
+  padding: 8px 0;
+  color: var(--text-secondary);
+}
+
+.goal-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+  text-align: left;
+}
+
+.goal-example {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg);
+  border-radius: 12px;
+}
+
+.goal-example-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.goal-example strong {
+  display: block;
+  color: var(--text);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+.goal-example p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Сетка типов целей в модалке */
+.goal-type-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.goal-type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 12px 8px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.goal-type-btn.active {
+  border-color: var(--primary);
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--primary);
+}
+
+.goal-type-icon {
+  font-size: 22px;
+}
+
+.goal-type-name {
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 24px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  z-index: 2000;
+  max-width: 90%;
+  text-align: center;
+  animation: toast-in 0.25s ease-out;
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translate(-50%, 20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Блок целей в статистике */
+.goals-stats-block {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--bg);
+  border-radius: 12px;
+}
+
+.goals-stats-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.goals-stats-row + .goals-stats-row {
+  border-top: 1px solid var(--border);
+}
+
+.goals-stats-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.goals-stats-percent {
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.goals-stats-percent.high { color: var(--primary); }
+.goals-stats-percent.mid { color: #f59e0b; }
+.goals-stats-percent.low { color: var(--danger); }
+
+/* Статусы целей в дне */
+.day-goals-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.day-goal-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+.day-goal-item.success { color: var(--primary); }
+.day-goal-item.fail { color: var(--danger); }
+.day-goal-item.pending { color: var(--text-secondary); }
