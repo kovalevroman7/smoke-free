@@ -1074,36 +1074,31 @@ function App() {
 
           {mode === 'reduction' && data.reductionConfig?.type === 'goals' && (data.reductionConfig.goals || []).length > 0 && (() => {
             const goals = data.reductionConfig.goals
-            const rates = goals.map(g => ({
-              goal: g,
-              rate: getGoalSuccessRate(g, data.cigarettes, data.reductionConfig.startDate)
-            }))
-            const valid = rates.filter(r => r.rate !== null)
-            const overall = valid.length > 0
-              ? Math.round(valid.reduce((s, r) => s + r.rate, 0) / valid.length)
-              : null
-            const rateClass = (r) => r === null ? '' : r >= 80 ? 'high' : r >= 50 ? 'mid' : 'low'
+            const startKey = getDateKey(data.reductionConfig.startDate)
             return (
-              <div className="goals-stats-block">
-                <div className="goals-stats-row">
-                  <span className="goals-stats-label" style={{ fontWeight: 600, color: 'var(--text)' }}>
-                    Успешных дней по целям
-                  </span>
-                  <span className={`goals-stats-percent ${rateClass(overall)}`}>
-                    {overall === null ? '—' : `${overall}%`}
-                  </span>
+              <div className="goals-week-block">
+                <div className="goals-week-title">Цели за неделю</div>
+                <div className="goals-week-header">
+                  <span className="goals-week-icon-spacer" />
+                  {last7Days.map(day => (
+                    <div key={day} className="goals-week-day-label">{getDayOfWeek(day)}</div>
+                  ))}
                 </div>
-                {rates.map(({ goal, rate }) => {
+                {goals.map(goal => {
                   const meta = GOAL_TYPES[goal.type]
                   return (
-                    <div key={goal.id} className="goals-stats-row">
-                      <span className="goals-stats-label">
-                        <span>{meta?.icon}</span>
-                        <span>{meta?.name}</span>
-                      </span>
-                      <span className={`goals-stats-percent ${rateClass(rate)}`}>
-                        {rate === null ? '—' : `${rate}%`}
-                      </span>
+                    <div key={goal.id} className="goals-week-row">
+                      <span className="goals-week-icon" title={meta?.name}>{meta?.icon}</span>
+                      {last7Days.map(day => {
+                        const beforeStart = day < startKey
+                        if (beforeStart) {
+                          return <div key={day} className="goals-week-cell na">·</div>
+                        }
+                        const dayCigs = data.cigarettes.filter(t => getDateKey(t) === day)
+                        const status = getGoalDayStatus(goal, dayCigs, day)
+                        const symbol = status === 'success' ? '✓' : status === 'fail' ? '✗' : '·'
+                        return <div key={day} className={`goals-week-cell ${status}`}>{symbol}</div>
+                      })}
                     </div>
                   )
                 })}

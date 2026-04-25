@@ -1117,6 +1117,81 @@ body {
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
+/* Матрица «цели x недели» */
+.goals-week-block {
+  margin-top: 20px;
+  padding: 16px;
+  background: var(--bg);
+  border-radius: 12px;
+}
+
+.goals-week-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.goals-week-header,
+.goals-week-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.goals-week-row {
+  margin-top: 6px;
+}
+
+.goals-week-icon-spacer,
+.goals-week-icon {
+  width: 28px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 18px;
+}
+
+.goals-week-day-label {
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-secondary);
+  text-transform: lowercase;
+}
+
+.goals-week-cell {
+  flex: 1;
+  aspect-ratio: 1;
+  max-height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--card);
+  color: var(--text-secondary);
+}
+
+.goals-week-cell.success {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--primary);
+}
+
+.goals-week-cell.fail {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger);
+}
+
+.goals-week-cell.pending {
+  background: var(--card);
+  color: #f59e0b;
+}
+
+.goals-week-cell.na {
+  opacity: 0.4;
+}
+
 /* Блок целей в статистике */
 .goals-stats-block {
   margin-top: 20px;
