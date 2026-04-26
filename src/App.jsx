@@ -1145,23 +1145,28 @@ function App() {
 
           {(data.goals || []).length > 0 && (() => {
             const goals = data.goals
+            const isMonth = statsPeriod === 'month'
+            const weekdayLabels = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
+            const leadingEmpty = isMonth
+              ? (new Date(periodDays[0]).getDay() + 6) % 7
+              : 0
+            const trailingEmpty = isMonth
+              ? (6 - ((new Date(periodDays[periodDays.length - 1]).getDay() + 6) % 7))
+              : 0
             return (
-              <div className={`goals-week-block ${statsPeriod === 'month' ? 'month' : ''}`}>
+              <div className={`goals-week-block ${isMonth ? 'month' : ''}`}>
                 <div className="goals-week-title">
-                  {statsPeriod === 'week' ? 'Цели за неделю' : 'Цели за месяц'}
+                  {isMonth ? 'Цели за месяц' : 'Цели за неделю'}
                 </div>
                 <div className="goals-week-days">
-                  {periodDays.map((day, i) => {
-                    const date = new Date(day)
-                    const dayOfMonth = date.getDate()
-                    const showLabel = statsPeriod === 'week'
-                      ? true
-                      : (i === 0 || i === periodDays.length - 1 || dayOfMonth === 1 || dayOfMonth % 5 === 0)
-                    const label = statsPeriod === 'week' ? getDayOfWeek(day) : String(dayOfMonth)
-                    return (
-                      <div key={day} className="goals-week-day-label">{showLabel ? label : ''}</div>
-                    )
-                  })}
+                  {isMonth
+                    ? weekdayLabels.map(wd => (
+                        <div key={wd} className="goals-week-day-label">{wd}</div>
+                      ))
+                    : periodDays.map(day => (
+                        <div key={day} className="goals-week-day-label">{getDayOfWeek(day)}</div>
+                      ))
+                  }
                 </div>
                 {goals.map(goal => {
                   const meta = GOAL_TYPES[goal.type]
@@ -1173,6 +1178,9 @@ function App() {
                         <span className="goals-week-goal-label">{getCompactGoalLabel(goal)}</span>
                       </div>
                       <div className="goals-week-cells">
+                        {Array.from({ length: leadingEmpty }, (_, i) => (
+                          <div key={`lead-${i}`} className="goals-week-cell empty" />
+                        ))}
                         {periodDays.map(day => {
                           const beforeStart = day < goalStartKey
                           if (beforeStart) {
@@ -1183,6 +1191,9 @@ function App() {
                           const symbol = status === 'success' ? '✓' : status === 'fail' ? '✗' : '·'
                           return <div key={day} className={`goals-week-cell ${status}`}>{symbol}</div>
                         })}
+                        {Array.from({ length: trailingEmpty }, (_, i) => (
+                          <div key={`tail-${i}`} className="goals-week-cell empty" />
+                        ))}
                       </div>
                     </div>
                   )

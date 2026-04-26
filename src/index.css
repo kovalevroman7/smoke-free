@@ -1337,18 +1337,19 @@ body {
   border-radius: 3px 3px 0 0;
 }
 
-/* Месячная матрица целей: уменьшенные ячейки */
+/* Месячная матрица целей: календарная сетка 7 столбцов */
 .goals-week-block.month .goals-week-days,
 .goals-week-block.month .goals-week-cells {
-  gap: 2px;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
 }
 
-.goals-week-block.month .goals-week-day-label {
-  font-size: 9px;
+.goals-week-block.month .goals-week-cells {
+  margin-top: 4px;
 }
 
-.goals-week-block.month .goals-week-cell {
-  font-size: 9px;
-  max-height: 16px;
-  border-radius: 3px;
+.goals-week-block.month .goals-week-cell.empty {
+  background: transparent;
+  pointer-events: none;
 }
