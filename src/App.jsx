@@ -1306,7 +1306,11 @@ function App() {
                         isOpen={openGoalSwipeId === goal.id}
                         onToggle={(isOpen) => setOpenGoalSwipeId(isOpen ? goal.id : null)}
                         onEdit={() => openEditGoal(goal)}
-                        onDelete={() => deleteGoal(goal.id)}
+                        onDelete={() => {
+                          if (confirm('Удалить эту цель? Действие необратимо.')) {
+                            deleteGoal(goal.id)
+                          }
+                        }}
                       >
                         <div className={`goal-row ${goal.enabled ? '' : 'goal-disabled'}`}>
                           <div className="goal-row-icon">{meta?.icon}</div>
@@ -1462,6 +1466,21 @@ function App() {
                 {editingGoalId ? 'Сохранить' : 'Создать'}
               </button>
             </div>
+
+            {editingGoalId && (
+              <button
+                className="modal-btn delete"
+                onClick={() => {
+                  if (confirm('Удалить эту цель? Действие необратимо.')) {
+                    deleteGoal(editingGoalId)
+                    setShowGoalModal(false)
+                    setEditingGoalId(null)
+                  }
+                }}
+              >
+                Удалить цель
+              </button>
+            )}
           </div>
         </div>
       )}
