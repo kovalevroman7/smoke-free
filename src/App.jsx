@@ -180,6 +180,15 @@ function formatDuration(minutes) {
   return m > 0 ? `${h}ч ${m}м` : `${h}ч`
 }
 
+function getCompactGoalLabel(goal) {
+  const p = goal.params || {}
+  if (goal.type === 'silence') return `Тишина ${p.from}–${p.to}`
+  if (goal.type === 'limit_before') return `До ${p.beforeTime}: ≤${p.maxCount}`
+  if (goal.type === 'morning_interval') return `Первые ${p.count} с интервалом ${p.intervalMinutes} мин`
+  if (goal.type === 'evening_interval') return `После ${p.afterTime}: ≥${p.intervalMinutes} мин`
+  return GOAL_TYPES[goal.type]?.name || ''
+}
+
 function evaluateGoal(goal, dayCigarettes, now) {
   const sortedCigs = [...dayCigarettes].sort((a, b) => a - b)
   const nowMinutes = new Date(now).getHours() * 60 + new Date(now).getMinutes()
@@ -1096,8 +1105,7 @@ function App() {
             return (
               <div className="goals-week-block">
                 <div className="goals-week-title">Цели за неделю</div>
-                <div className="goals-week-header">
-                  <span className="goals-week-icon-spacer" />
+                <div className="goals-week-days">
                   {last7Days.map(day => (
                     <div key={day} className="goals-week-day-label">{getDayOfWeek(day)}</div>
                   ))}
@@ -1105,18 +1113,23 @@ function App() {
                 {goals.map(goal => {
                   const meta = GOAL_TYPES[goal.type]
                   return (
-                    <div key={goal.id} className="goals-week-row">
-                      <span className="goals-week-icon" title={meta?.name}>{meta?.icon}</span>
-                      {last7Days.map(day => {
-                        const beforeStart = day < startKey
-                        if (beforeStart) {
-                          return <div key={day} className="goals-week-cell na">·</div>
-                        }
-                        const dayCigs = data.cigarettes.filter(t => getDateKey(t) === day)
-                        const status = getGoalDayStatus(goal, dayCigs, day)
-                        const symbol = status === 'success' ? '✓' : status === 'fail' ? '✗' : '·'
-                        return <div key={day} className={`goals-week-cell ${status}`}>{symbol}</div>
-                      })}
+                    <div key={goal.id} className="goals-week-goal">
+                      <div className="goals-week-goal-header">
+                        <span className="goals-week-goal-icon">{meta?.icon}</span>
+                        <span className="goals-week-goal-label">{getCompactGoalLabel(goal)}</span>
+                      </div>
+                      <div className="goals-week-cells">
+                        {last7Days.map(day => {
+                          const beforeStart = day < startKey
+                          if (beforeStart) {
+                            return <div key={day} className="goals-week-cell na">·</div>
+                          }
+                          const dayCigs = data.cigarettes.filter(t => getDateKey(t) === day)
+                          const status = getGoalDayStatus(goal, dayCigs, day)
+                          const symbol = status === 'success' ? '✓' : status === 'fail' ? '✗' : '·'
+                          return <div key={day} className={`goals-week-cell ${status}`}>{symbol}</div>
+                        })}
+                      </div>
                     </div>
                   )
                 })}
@@ -1169,7 +1182,7 @@ function App() {
                         return (
                           <div key={goal.id} className={`day-goal-item ${status}`}>
                             <span>{meta?.icon}</span>
-                            <span style={{ flex: 1 }}>{meta?.name}</span>
+                            <span style={{ flex: 1 }}>{getCompactGoalLabel(goal)}</span>
                             <span style={{ fontWeight: 600 }}>{symbol}</span>
                           </div>
                         )
