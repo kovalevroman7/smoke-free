@@ -290,6 +290,7 @@ function getGoalDayStatus(goal, dayCigarettes, dayKey) {
   const evalTime = isToday ? Date.now() : new Date(dayKey).setHours(23, 59, 59, 999)
   const result = evaluateGoal(goal, dayCigarettes, evalTime)
   if (result.status === 'fail') return 'fail'
+  if (result.status === 'success') return 'success'
   if (!isToday) return 'success'
   return 'pending'
 }
