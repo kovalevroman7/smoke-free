@@ -1271,3 +1271,84 @@ body {
 .day-goal-item.success { color: var(--primary); }
 .day-goal-item.fail { color: var(--danger); }
 .day-goal-item.pending { color: var(--text-secondary); }
+
+/* Переключатель периода в статистике */
+.period-switcher {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.period-switcher-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.period-switcher-btn.active {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+/* Сравнение с предыдущим периодом */
+.comparison-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+}
+
+/* Месячный график: узкие столбцы и компактные подписи */
+.chart--month {
+  gap: 2px;
+  padding: 10px 0 4px;
+}
+
+.chart--month .chart-bar-wrapper {
+  padding: 2px 0;
+  gap: 4px;
+  min-width: 0;
+}
+
+.chart--month .chart-count {
+  display: none;
+}
+
+.chart--month .chart-label {
+  font-size: 9px;
+  height: 12px;
+  line-height: 12px;
+}
+
+.chart--month .chart-bar {
+  border-radius: 3px 3px 0 0;
+}
+
+/* Месячная матрица целей: уменьшенные ячейки */
+.goals-week-block.month .goals-week-days,
+.goals-week-block.month .goals-week-cells {
+  gap: 2px;
+}
+
+.goals-week-block.month .goals-week-day-label {
+  font-size: 9px;
+}
+
+.goals-week-block.month .goals-week-cell {
+  font-size: 9px;
+  max-height: 16px;
+  border-radius: 3px;
+}

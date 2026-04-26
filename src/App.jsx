@@ -394,6 +394,7 @@ function App() {
   const [data, setData] = useState(loadData)
   const [timeSinceLast, setTimeSinceLast] = useState(0)
   const [activeTab, setActiveTab] = useState('home')
+  const [statsPeriod, setStatsPeriod] = useState('week')
   const [selectedDay, setSelectedDay] = useState(null)
   const [editingIndex, setEditingIndex] = useState(null)
   const [editHours, setEditHours] = useState('')
@@ -728,22 +729,34 @@ function App() {
   const todayKey = getDateKey(Date.now())
   const todayCount = data.cigarettes.filter(t => getDateKey(t) === todayKey).length
 
-  const last7Days = Array.from({ length: 7 }, (_, i) => {
+  const periodLength = statsPeriod === 'week' ? 7 : 30
+  const periodDays = Array.from({ length: periodLength }, (_, i) => {
     const date = new Date()
-    date.setDate(date.getDate() - (6 - i))
+    date.setDate(date.getDate() - (periodLength - 1 - i))
+    return getDateKey(date.getTime())
+  })
+  const prevPeriodDays = Array.from({ length: periodLength }, (_, i) => {
+    const date = new Date()
+    date.setDate(date.getDate() - (periodLength * 2 - 1 - i))
     return getDateKey(date.getTime())
   })
 
-  const dailyCounts = last7Days.map(day => ({
+  const dailyCounts = periodDays.map(day => ({
     day,
     count: data.cigarettes.filter(t => getDateKey(t) === day).length
   }))
 
   const maxCount = Math.max(...dailyCounts.map(d => d.count), 1)
-  const weeklyTotal = dailyCounts.reduce((sum, d) => sum + d.count, 0)
-  const weeklyCost = data.packPrice && data.cigarettesPerPack
-    ? (weeklyTotal / data.cigarettesPerPack) * data.packPrice
+  const periodTotal = dailyCounts.reduce((sum, d) => sum + d.count, 0)
+  const periodAvg = periodTotal / periodLength
+  const periodCost = data.packPrice && data.cigarettesPerPack
+    ? (periodTotal / data.cigarettesPerPack) * data.packPrice
     : 0
+  const prevPeriodTotal = prevPeriodDays.reduce(
+    (sum, day) => sum + data.cigarettes.filter(t => getDateKey(t) === day).length,
+    0
+  )
+  const periodDelta = prevPeriodTotal === 0 ? null : (periodTotal - prevPeriodTotal) / prevPeriodTotal
 
   const todayCigarettes = data.cigarettes
     .filter(t => getDateKey(t) === todayKey)
@@ -1049,56 +1062,110 @@ function App() {
 
       {activeTab === 'stats' && (
         <div className="stats-card">
-          <h2 style={{ marginBottom: 20 }}>Статистика за неделю</h2>
+          <h2 style={{ marginBottom: 16 }}>
+            {statsPeriod === 'week' ? 'Статистика за неделю' : 'Статистика за месяц'}
+          </h2>
+
+          <div className="period-switcher">
+            <button
+              className={`period-switcher-btn ${statsPeriod === 'week' ? 'active' : ''}`}
+              onClick={() => setStatsPeriod('week')}
+            >
+              Неделя
+            </button>
+            <button
+              className={`period-switcher-btn ${statsPeriod === 'month' ? 'active' : ''}`}
+              onClick={() => setStatsPeriod('month')}
+            >
+              Месяц
+            </button>
+          </div>
 
           <div style={{ marginBottom: 20, padding: '16px', background: 'var(--bg)', borderRadius: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Всего за неделю</span>
-              <strong>{weeklyTotal} шт</strong>
+              <span style={{ color: 'var(--text-secondary)' }}>
+                {statsPeriod === 'week' ? 'Всего за неделю' : 'Всего за месяц'}
+              </span>
+              <strong>{periodTotal} шт</strong>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: data.packPrice > 0 ? 8 : 0 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
               <span style={{ color: 'var(--text-secondary)' }}>В среднем в день</span>
-              <strong>{(weeklyTotal / 7).toFixed(1)} шт</strong>
+              <strong>{periodAvg.toFixed(1)} шт</strong>
             </div>
             {data.packPrice > 0 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Потрачено за неделю</span>
-                <strong style={{ color: 'var(--danger)' }}>{weeklyCost.toFixed(0)} ₽</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: 8, marginBottom: 8, borderTop: '1px solid var(--border)' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>
+                  {statsPeriod === 'week' ? 'Потрачено за неделю' : 'Потрачено за месяц'}
+                </span>
+                <strong style={{ color: 'var(--danger)' }}>{periodCost.toFixed(0)} ₽</strong>
               </div>
             )}
+            <div className="comparison-row">
+              <span style={{ color: 'var(--text-secondary)' }}>
+                {statsPeriod === 'week' ? 'К прошлой неделе' : 'К прошлому месяцу'}
+              </span>
+              {periodDelta === null ? (
+                <span style={{ color: 'var(--text-secondary)' }}>нет данных</span>
+              ) : (() => {
+                const pct = Math.round(Math.abs(periodDelta) * 100)
+                const up = periodDelta > 0
+                const flat = pct === 0
+                const color = flat ? 'var(--text-secondary)' : (up ? 'var(--danger)' : 'var(--success)')
+                const arrow = flat ? '→' : (up ? '↑' : '↓')
+                return <strong style={{ color }}>{arrow} {pct}%</strong>
+              })()}
+            </div>
           </div>
 
-          <div className="chart">
-            {dailyCounts.map(({ day, count }) => (
-              <div
-                key={day}
-                className={`chart-bar-wrapper ${selectedDay === day ? 'selected' : ''}`}
-                onClick={() => setSelectedDay(selectedDay === day ? null : day)}
-                style={{ cursor: 'pointer' }}
-              >
-                <span className="chart-count">{count}</span>
+          <div className={`chart ${statsPeriod === 'month' ? 'chart--month' : ''}`}>
+            {dailyCounts.map(({ day, count }, i) => {
+              const date = new Date(day)
+              const dayOfMonth = date.getDate()
+              const showLabel = statsPeriod === 'week'
+                ? true
+                : (i === 0 || i === dailyCounts.length - 1 || dayOfMonth === 1 || dayOfMonth % 5 === 0)
+              const label = statsPeriod === 'week' ? getDayOfWeek(day) : String(dayOfMonth)
+              return (
                 <div
-                  className="chart-bar"
-                  style={{ height: `${(count / maxCount) * 100}px` }}
-                />
-                <span className="chart-label">{getDayOfWeek(day)}</span>
-              </div>
-            ))}
+                  key={day}
+                  className={`chart-bar-wrapper ${selectedDay === day ? 'selected' : ''}`}
+                  onClick={() => setSelectedDay(selectedDay === day ? null : day)}
+                  style={{ cursor: 'pointer' }}
+                >
+                  <span className="chart-count">{count}</span>
+                  <div
+                    className="chart-bar"
+                    style={{ height: `${(count / maxCount) * 100}px` }}
+                  />
+                  <span className="chart-label">{showLabel ? label : ''}</span>
+                </div>
+              )
+            })}
           </div>
 
           {(data.goals || []).length > 0 && (() => {
             const goals = data.goals
             return (
-              <div className="goals-week-block">
-                <div className="goals-week-title">Цели за неделю</div>
+              <div className={`goals-week-block ${statsPeriod === 'month' ? 'month' : ''}`}>
+                <div className="goals-week-title">
+                  {statsPeriod === 'week' ? 'Цели за неделю' : 'Цели за месяц'}
+                </div>
                 <div className="goals-week-days">
-                  {last7Days.map(day => (
-                    <div key={day} className="goals-week-day-label">{getDayOfWeek(day)}</div>
-                  ))}
+                  {periodDays.map((day, i) => {
+                    const date = new Date(day)
+                    const dayOfMonth = date.getDate()
+                    const showLabel = statsPeriod === 'week'
+                      ? true
+                      : (i === 0 || i === periodDays.length - 1 || dayOfMonth === 1 || dayOfMonth % 5 === 0)
+                    const label = statsPeriod === 'week' ? getDayOfWeek(day) : String(dayOfMonth)
+                    return (
+                      <div key={day} className="goals-week-day-label">{showLabel ? label : ''}</div>
+                    )
+                  })}
                 </div>
                 {goals.map(goal => {
                   const meta = GOAL_TYPES[goal.type]
-                  const goalStartKey = goal.createdAt ? getDateKey(goal.createdAt) : last7Days[0]
+                  const goalStartKey = goal.createdAt ? getDateKey(goal.createdAt) : periodDays[0]
                   return (
                     <div key={goal.id} className="goals-week-goal">
                       <div className="goals-week-goal-header">
@@ -1106,7 +1173,7 @@ function App() {
                         <span className="goals-week-goal-label">{getCompactGoalLabel(goal)}</span>
                       </div>
                       <div className="goals-week-cells">
-                        {last7Days.map(day => {
+                        {periodDays.map(day => {
                           const beforeStart = day < goalStartKey
                           if (beforeStart) {
                             return <div key={day} className="goals-week-cell na">·</div>
