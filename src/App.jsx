@@ -706,7 +706,7 @@ function App() {
       if (editingGoalId) {
         nextGoals = goals.map(g => g.id === editingGoalId ? { ...g, type: goalForm.type, params } : g)
       } else {
-        nextGoals = [...goals, { id: generateGoalId(), type: goalForm.type, enabled: true, params }]
+        nextGoals = [...goals, { id: generateGoalId(), type: goalForm.type, enabled: true, params, createdAt: Date.now() }]
       }
       return { ...prev, reductionConfig: { ...prev.reductionConfig, goals: nextGoals } }
     })
@@ -1112,6 +1112,9 @@ function App() {
                 </div>
                 {goals.map(goal => {
                   const meta = GOAL_TYPES[goal.type]
+                  const goalStartKey = goal.createdAt
+                    ? (getDateKey(goal.createdAt) > startKey ? getDateKey(goal.createdAt) : startKey)
+                    : startKey
                   return (
                     <div key={goal.id} className="goals-week-goal">
                       <div className="goals-week-goal-header">
@@ -1120,7 +1123,7 @@ function App() {
                       </div>
                       <div className="goals-week-cells">
                         {last7Days.map(day => {
-                          const beforeStart = day < startKey
+                          const beforeStart = day < goalStartKey
                           if (beforeStart) {
                             return <div key={day} className="goals-week-cell na">·</div>
                           }
@@ -1175,18 +1178,20 @@ function App() {
                   <div>
                     <p className="day-detail-subtitle" style={{ marginTop: 20, marginBottom: 8 }}>Цели за день</p>
                     <div className="day-goals-list">
-                      {data.reductionConfig.goals.map(goal => {
-                        const status = getGoalDayStatus(goal, dayCigs, selectedDay)
-                        const meta = GOAL_TYPES[goal.type]
-                        const symbol = status === 'success' ? '✓' : status === 'fail' ? '✗' : '…'
-                        return (
-                          <div key={goal.id} className={`day-goal-item ${status}`}>
-                            <span>{meta?.icon}</span>
-                            <span style={{ flex: 1 }}>{getCompactGoalLabel(goal)}</span>
-                            <span style={{ fontWeight: 600 }}>{symbol}</span>
-                          </div>
-                        )
-                      })}
+                      {data.reductionConfig.goals
+                        .filter(goal => !goal.createdAt || getDateKey(goal.createdAt) <= selectedDay)
+                        .map(goal => {
+                          const status = getGoalDayStatus(goal, dayCigs, selectedDay)
+                          const meta = GOAL_TYPES[goal.type]
+                          const symbol = status === 'success' ? '✓' : status === 'fail' ? '✗' : '…'
+                          return (
+                            <div key={goal.id} className={`day-goal-item ${status}`}>
+                              <span>{meta?.icon}</span>
+                              <span style={{ flex: 1 }}>{getCompactGoalLabel(goal)}</span>
+                              <span style={{ fontWeight: 600 }}>{symbol}</span>
+                            </div>
+                          )
+                        })}
                     </div>
                   </div>
                 )
