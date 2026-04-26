@@ -7,14 +7,25 @@ const defaultData = {
   packPrice: 0,
   cigarettesPerPack: 20,
   mode: 'observation',
-  reductionConfig: null
+  reductionConfig: null,
+  dayStartHour: 0
+}
+
+let dayStartOffsetMs = 0
+
+function setDayStartHour(hour) {
+  const h = Math.max(0, Math.min(12, Number(hour) || 0))
+  dayStartOffsetMs = h * 3600000
 }
 
 function loadData() {
   try {
-    const data = localStorage.getItem(STORAGE_KEY)
-    return data ? { ...defaultData, ...JSON.parse(data) } : defaultData
+    const raw = localStorage.getItem(STORAGE_KEY)
+    const parsed = raw ? { ...defaultData, ...JSON.parse(raw) } : defaultData
+    setDayStartHour(parsed.dayStartHour)
+    return parsed
   } catch {
+    setDayStartHour(defaultData.dayStartHour)
     return defaultData
   }
 }
@@ -48,7 +59,7 @@ function formatTimeAgo(timestamp) {
 }
 
 function getDateKey(timestamp) {
-  const date = new Date(timestamp)
+  const date = new Date(timestamp - dayStartOffsetMs)
   const y = date.getFullYear()
   const m = (date.getMonth() + 1).toString().padStart(2, '0')
   const d = date.getDate().toString().padStart(2, '0')
@@ -84,11 +95,9 @@ function getHourlyCounts(cigarettes, dayKey) {
 
 // Функции для режима сокращения
 function getCurrentProgramDay(startDate) {
-  const start = new Date(startDate)
-  start.setHours(0, 0, 0, 0)
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  const diffDays = Math.floor((now - start) / 86400000)
+  const start = new Date(`${getDateKey(startDate)}T00:00:00`)
+  const today = new Date(`${getDateKey(Date.now())}T00:00:00`)
+  const diffDays = Math.round((today - start) / 86400000)
   return Math.max(1, diffDays + 1)
 }
 
@@ -381,6 +390,7 @@ function App() {
   const [addMinutes, setAddMinutes] = useState('')
   const [settingsPackPrice, setSettingsPackPrice] = useState(data.packPrice?.toString() || '')
   const [settingsCigarettesPerPack, setSettingsCigarettesPerPack] = useState(data.cigarettesPerPack?.toString() || '20')
+  const [settingsDayStartHour, setSettingsDayStartHour] = useState((data.dayStartHour ?? 0).toString())
   const [openSwipeIndex, setOpenSwipeIndex] = useState(null)
 
   // Состояния для режима сокращения
@@ -457,6 +467,10 @@ function App() {
   useEffect(() => {
     saveData(data)
   }, [data])
+
+  useEffect(() => {
+    setDayStartHour(data.dayStartHour)
+  }, [data.dayStartHour])
 
   const addCigarette = useCallback(() => {
     const now = Date.now()
@@ -558,13 +572,15 @@ function App() {
   const saveSettings = useCallback(() => {
     const price = parseFloat(settingsPackPrice) || 0
     const perPack = parseInt(settingsCigarettesPerPack, 10) || 20
+    const dayStart = Math.max(0, Math.min(12, parseInt(settingsDayStartHour, 10) || 0))
 
     setData(prev => ({
       ...prev,
       packPrice: price,
-      cigarettesPerPack: perPack
+      cigarettesPerPack: perPack,
+      dayStartHour: dayStart
     }))
-  }, [settingsPackPrice, settingsCigarettesPerPack])
+  }, [settingsPackPrice, settingsCigarettesPerPack, settingsDayStartHour])
 
   const saveReductionConfig = useCallback(() => {
     const config = setupProgramType === 'linear'
@@ -1693,6 +1709,21 @@ function App() {
                 placeholder="20"
                 min="1"
               />
+            </div>
+            <div className="settings-input-wrapper">
+              <label className="input-label">Час начала нового дня (0–12)</label>
+              <input
+                type="number"
+                className="settings-input"
+                value={settingsDayStartHour}
+                onChange={e => setSettingsDayStartHour(e.target.value)}
+                placeholder="0"
+                min="0"
+                max="12"
+              />
+              <p style={{ marginTop: 6, fontSize: 12, color: 'var(--text-secondary)' }}>
+                Активность до этого часа считается прошедшим днём. Например, при значении 4 сигарета в 02:00 относится ко вчера.
+              </p>
             </div>
             <button className="save-settings-btn" onClick={saveSettings}>
               Сохранить
