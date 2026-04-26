@@ -8,6 +8,7 @@ const defaultData = {
   cigarettesPerPack: 20,
   mode: 'observation',
   reductionConfig: null,
+  goals: [],
   dayStartHour: 0
 }
 
@@ -22,6 +23,9 @@ function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     const parsed = raw ? { ...defaultData, ...JSON.parse(raw) } : defaultData
+    if ((!parsed.goals || parsed.goals.length === 0) && parsed.reductionConfig?.goals?.length) {
+      parsed.goals = parsed.reductionConfig.goals
+    }
     setDayStartHour(parsed.dayStartHour)
     return parsed
   } catch {
@@ -462,17 +466,10 @@ function App() {
   // Тик для пересчёта статусов целей
   const [, setGoalsTick] = useState(0)
   useEffect(() => {
-    if (mode !== 'reduction' || data.reductionConfig?.type !== 'goals') return
+    if (!data.goals?.length) return
     const interval = setInterval(() => setGoalsTick(t => t + 1), 30000)
     return () => clearInterval(interval)
-  }, [mode, data.reductionConfig?.type])
-
-  // Если вкладка «Цели» скрылась — переключиться на главную
-  useEffect(() => {
-    if (activeTab === 'goals' && (mode !== 'reduction' || data.reductionConfig?.type !== 'goals')) {
-      setActiveTab('home')
-    }
-  }, [activeTab, mode, data.reductionConfig?.type])
+  }, [data.goals?.length])
 
   useEffect(() => {
     saveData(data)
@@ -485,10 +482,10 @@ function App() {
   const addCigarette = useCallback(() => {
     const now = Date.now()
     setData(prev => {
-      if (prev.mode === 'reduction' && prev.reductionConfig?.type === 'goals' && prev.reductionConfig.goals?.length) {
+      if (prev.goals?.length) {
         const todayKey = getDateKey(now)
         const todayCigs = prev.cigarettes.filter(t => getDateKey(t) === todayKey)
-        const violated = prev.reductionConfig.goals
+        const violated = prev.goals
           .filter(g => g.enabled)
           .filter(g => checkGoalViolationOnAdd(g, todayCigs, now))
         if (violated.length > 0) {
@@ -606,8 +603,6 @@ function App() {
         }
       : {
           type: 'goals',
-          goals: [],
-          goalHistory: {},
           startDate: Date.now(),
           isConfigured: true
         }
@@ -648,8 +643,6 @@ function App() {
           }
         : {
             type: 'goals',
-            goals: [],
-            goalHistory: {},
             startDate: Date.now(),
             isConfigured: true
           }
@@ -701,14 +694,14 @@ function App() {
     }
 
     setData(prev => {
-      const goals = prev.reductionConfig?.goals || []
+      const goals = prev.goals || []
       let nextGoals
       if (editingGoalId) {
         nextGoals = goals.map(g => g.id === editingGoalId ? { ...g, type: goalForm.type, params } : g)
       } else {
         nextGoals = [...goals, { id: generateGoalId(), type: goalForm.type, enabled: true, params, createdAt: Date.now() }]
       }
-      return { ...prev, reductionConfig: { ...prev.reductionConfig, goals: nextGoals } }
+      return { ...prev, goals: nextGoals }
     })
 
     setShowGoalModal(false)
@@ -718,10 +711,7 @@ function App() {
   const deleteGoal = useCallback((goalId) => {
     setData(prev => ({
       ...prev,
-      reductionConfig: {
-        ...prev.reductionConfig,
-        goals: (prev.reductionConfig?.goals || []).filter(g => g.id !== goalId)
-      }
+      goals: (prev.goals || []).filter(g => g.id !== goalId)
     }))
     setOpenGoalSwipeId(null)
   }, [])
@@ -729,12 +719,9 @@ function App() {
   const toggleGoalEnabled = useCallback((goalId) => {
     setData(prev => ({
       ...prev,
-      reductionConfig: {
-        ...prev.reductionConfig,
-        goals: (prev.reductionConfig?.goals || []).map(g =>
-          g.id === goalId ? { ...g, enabled: !g.enabled } : g
-        )
-      }
+      goals: (prev.goals || []).map(g =>
+        g.id === goalId ? { ...g, enabled: !g.enabled } : g
+      )
     }))
   }, [])
 
@@ -881,7 +868,7 @@ function App() {
                 <>
                   {/* Карточка активных целей */}
                   {(() => {
-                    const goals = data.reductionConfig.goals || []
+                    const goals = data.goals || []
                     const enabled = goals.filter(g => g.enabled)
                     if (enabled.length === 0) {
                       return (
@@ -1099,9 +1086,8 @@ function App() {
             ))}
           </div>
 
-          {mode === 'reduction' && data.reductionConfig?.type === 'goals' && (data.reductionConfig.goals || []).length > 0 && (() => {
-            const goals = data.reductionConfig.goals
-            const startKey = getDateKey(data.reductionConfig.startDate)
+          {(data.goals || []).length > 0 && (() => {
+            const goals = data.goals
             return (
               <div className="goals-week-block">
                 <div className="goals-week-title">Цели за неделю</div>
@@ -1112,9 +1098,7 @@ function App() {
                 </div>
                 {goals.map(goal => {
                   const meta = GOAL_TYPES[goal.type]
-                  const goalStartKey = goal.createdAt
-                    ? (getDateKey(goal.createdAt) > startKey ? getDateKey(goal.createdAt) : startKey)
-                    : startKey
+                  const goalStartKey = goal.createdAt ? getDateKey(goal.createdAt) : last7Days[0]
                   return (
                     <div key={goal.id} className="goals-week-goal">
                       <div className="goals-week-goal-header">
@@ -1170,16 +1154,15 @@ function App() {
                 <span>23:00</span>
               </div>
 
-              {mode === 'reduction' && data.reductionConfig?.type === 'goals' && (data.reductionConfig.goals || []).length > 0 && (() => {
+              {(data.goals || []).length > 0 && (() => {
                 const dayCigs = data.cigarettes.filter(t => getDateKey(t) === selectedDay)
-                const startKey = getDateKey(data.reductionConfig.startDate)
-                if (selectedDay < startKey) return null
+                const visibleGoals = data.goals.filter(goal => !goal.createdAt || getDateKey(goal.createdAt) <= selectedDay)
+                if (visibleGoals.length === 0) return null
                 return (
                   <div>
                     <p className="day-detail-subtitle" style={{ marginTop: 20, marginBottom: 8 }}>Цели за день</p>
                     <div className="day-goals-list">
-                      {data.reductionConfig.goals
-                        .filter(goal => !goal.createdAt || getDateKey(goal.createdAt) <= selectedDay)
+                      {visibleGoals
                         .map(goal => {
                           const status = getGoalDayStatus(goal, dayCigs, selectedDay)
                           const meta = GOAL_TYPES[goal.type]
@@ -1249,7 +1232,7 @@ function App() {
           </p>
 
           {(() => {
-            const goals = data.reductionConfig?.goals || []
+            const goals = data.goals || []
             if (goals.length === 0) {
               return (
                 <div className="goals-onboarding">
@@ -1826,15 +1809,13 @@ function App() {
           <span className="nav-icon">📊</span>
           Статистика
         </button>
-        {mode === 'reduction' && data.reductionConfig?.type === 'goals' && (
-          <button
-            className={`nav-item ${activeTab === 'goals' ? 'active' : ''}`}
-            onClick={() => setActiveTab('goals')}
-          >
-            <span className="nav-icon">🎯</span>
-            Цели
-          </button>
-        )}
+        <button
+          className={`nav-item ${activeTab === 'goals' ? 'active' : ''}`}
+          onClick={() => setActiveTab('goals')}
+        >
+          <span className="nav-icon">🎯</span>
+          Цели
+        </button>
         <button
           className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
           onClick={() => setActiveTab('settings')}
