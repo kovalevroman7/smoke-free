@@ -816,13 +816,14 @@ function App() {
                 </div>
               </div>
 
-              <button className="smoke-btn" onClick={addCigarette}>
-                Выкурил сигарету
-              </button>
-
-              <button className="add-manual-btn" onClick={openAddModal}>
-                + Добавить вручную
-              </button>
+              <div className="action-row">
+                <button className="smoke-btn" onClick={addCigarette}>
+                  Выкурил сигарету
+                </button>
+                <button className="add-manual-btn" onClick={openAddModal}>
+                  + Добавить вручную
+                </button>
+              </div>
 
               <div className="stats-card">
                 <div className="stats-header">
@@ -920,13 +921,14 @@ function App() {
                     )
                   })()}
 
-                  <button className="smoke-btn" onClick={addCigarette}>
-                    Выкурил сигарету
-                  </button>
-
-                  <button className="add-manual-btn" onClick={openAddModal}>
-                    + Добавить вручную
-                  </button>
+                  <div className="action-row">
+                    <button className="smoke-btn" onClick={addCigarette}>
+                      Выкурил сигарету
+                    </button>
+                    <button className="add-manual-btn" onClick={openAddModal}>
+                      + Добавить вручную
+                    </button>
+                  </div>
 
                   <div className="stats-card">
                     <div className="stats-header">
@@ -1010,13 +1012,14 @@ function App() {
                     )}
                   </div>
 
-                  <button className="smoke-btn" onClick={addCigarette}>
-                    Выкурил сигарету
-                  </button>
-
-                  <button className="add-manual-btn" onClick={openAddModal}>
-                    + Добавить вручную
-                  </button>
+                  <div className="action-row">
+                    <button className="smoke-btn" onClick={addCigarette}>
+                      Выкурил сигарету
+                    </button>
+                    <button className="add-manual-btn" onClick={openAddModal}>
+                      + Добавить вручную
+                    </button>
+                  </div>
 
                   <div className="stats-card">
                     <div className="stats-header">
