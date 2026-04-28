@@ -880,15 +880,6 @@ body {
   color: var(--text-secondary);
 }
 
-.goals-card-count {
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--primary);
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-}
-
 .goals-card-add-btn {
   background: rgba(16, 185, 129, 0.1);
   color: var(--primary);
