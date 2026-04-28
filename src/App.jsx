@@ -384,6 +384,14 @@ const [activeTab, setActiveTab] = useState('home')
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
   }, [])
 
+  const [timeSinceLast, setTimeSinceLast] = useState(0)
+  useEffect(() => {
+    const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
+    if (!lastCigarette) return
+    const interval = setInterval(() => setTimeSinceLast(Date.now() - lastCigarette), 1000)
+    return () => clearInterval(interval)
+  }, [data.cigarettes])
+
   // Тик для пересчёта статусов целей
   const [, setGoalsTick] = useState(0)
   useEffect(() => {
@@ -706,6 +714,15 @@ const periodDays = (() => {
                     <button className="add-manual-btn" onClick={openAddModal}>
                       + Добавить вручную
                     </button>
+                  </div>
+
+                  <div className="timer-card">
+                    <div className="timer-label">
+                      {data.cigarettes.length > 0 ? 'Времени без сигареты' : 'Начните отслеживание'}
+                    </div>
+                    <div className="timer-value">
+                      {data.cigarettes.length > 0 ? formatTime(timeSinceLast) : '—:—:—'}
+                    </div>
                   </div>
 
                   <div className="stats-card">
