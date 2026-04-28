@@ -658,10 +658,6 @@ const periodDays = (() => {
 
   return (
     <div className="app">
-      <header className="header">
-        <h1>Smoke Free</h1>
-        <p>Каждая минута без сигареты — победа</p>
-      </header>
 
       {activeTab === 'home' && (
         <>
