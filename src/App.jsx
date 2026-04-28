@@ -525,13 +525,6 @@ const [activeTab, setActiveTab] = useState('home')
     setShowReductionSetupModal(false)
   }, [])
 
-  const resetReductionConfig = useCallback(() => {
-    setData(prev => ({
-      ...prev,
-      reductionConfig: null
-    }))
-  }, [])
-
 const openCreateGoal = useCallback(() => {
     setEditingGoalId(null)
     setGoalForm({
@@ -1315,19 +1308,6 @@ const periodDays = (() => {
               Сохранить
             </button>
           </div>
-
-          {data.reductionConfig?.isConfigured && (
-            <div className="settings-section" style={{ marginTop: 20 }}>
-              <h3 className="settings-section-title">Программа сокращения</h3>
-              <p style={{ marginBottom: 16, color: 'var(--text-secondary)', fontSize: 14 }}>
-                {`День ${getCurrentProgramDay(data.reductionConfig.startDate)}`}
-              </p>
-
-              <button className="modal-btn delete" onClick={resetReductionConfig}>
-                Сбросить программу
-              </button>
-            </div>
-          )}
         </div>
       )}
 
