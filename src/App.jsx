@@ -730,17 +730,42 @@ function App() {
   const todayKey = getDateKey(Date.now())
   const todayCount = data.cigarettes.filter(t => getDateKey(t) === todayKey).length
 
-  const periodLength = statsPeriod === 'week' ? 7 : 30
-  const periodDays = Array.from({ length: periodLength }, (_, i) => {
-    const date = new Date()
-    date.setDate(date.getDate() - (periodLength - 1 - i))
-    return getDateKey(date.getTime())
-  })
-  const prevPeriodDays = Array.from({ length: periodLength }, (_, i) => {
-    const date = new Date()
-    date.setDate(date.getDate() - (periodLength * 2 - 1 - i))
-    return getDateKey(date.getTime())
-  })
+  const periodDays = (() => {
+    if (statsPeriod === 'week') {
+      const today = new Date()
+      const dayOfWeek = (today.getDay() + 6) % 7
+      const monday = new Date(today)
+      monday.setDate(today.getDate() - dayOfWeek)
+      return Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(monday)
+        d.setDate(monday.getDate() + i)
+        return getDateKey(d.getTime())
+      })
+    }
+    return Array.from({ length: 30 }, (_, i) => {
+      const date = new Date()
+      date.setDate(date.getDate() - (29 - i))
+      return getDateKey(date.getTime())
+    })
+  })()
+  const prevPeriodDays = (() => {
+    if (statsPeriod === 'week') {
+      const today = new Date()
+      const dayOfWeek = (today.getDay() + 6) % 7
+      const prevMonday = new Date(today)
+      prevMonday.setDate(today.getDate() - dayOfWeek - 7)
+      return Array.from({ length: 7 }, (_, i) => {
+        const d = new Date(prevMonday)
+        d.setDate(prevMonday.getDate() + i)
+        return getDateKey(d.getTime())
+      })
+    }
+    return Array.from({ length: 30 }, (_, i) => {
+      const date = new Date()
+      date.setDate(date.getDate() - (59 - i))
+      return getDateKey(date.getTime())
+    })
+  })()
 
   const dailyCounts = periodDays.map(day => ({
     day,
@@ -749,7 +774,7 @@ function App() {
 
   const maxCount = Math.max(...dailyCounts.map(d => d.count), 1)
   const periodTotal = dailyCounts.reduce((sum, d) => sum + d.count, 0)
-  const periodAvg = periodTotal / periodLength
+  const periodAvg = periodTotal / periodDays.length
   const periodCost = data.packPrice && data.cigarettesPerPack
     ? (periodTotal / data.cigarettesPerPack) * data.packPrice
     : 0
@@ -1181,9 +1206,9 @@ function App() {
                         ))}
                         {periodDays.map(day => {
                           const beforeStart = day < goalStartKey
-                          if (beforeStart) {
-                            return <div key={day} className="goals-week-cell na">·</div>
-                          }
+                          if (beforeStart) return <div key={day} className="goals-week-cell na">·</div>
+                          const isFuture = day > todayKey
+                          if (isFuture) return <div key={day} className="goals-week-cell empty" />
                           const dayCigs = data.cigarettes.filter(t => getDateKey(t) === day)
                           const status = getGoalDayStatus(goal, dayCigs, day)
                           const symbol = status === 'success' ? '✓' : status === 'fail' ? '✗' : '·'
