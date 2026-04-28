@@ -774,7 +774,8 @@ function App() {
 
   const maxCount = Math.max(...dailyCounts.map(d => d.count), 1)
   const periodTotal = dailyCounts.reduce((sum, d) => sum + d.count, 0)
-  const periodAvg = periodTotal / periodDays.length
+  const elapsedDays = periodDays.filter(d => d <= todayKey).length || 1
+  const periodAvg = periodTotal / elapsedDays
   const periodCost = data.packPrice && data.cigarettesPerPack
     ? (periodTotal / data.cigarettesPerPack) * data.packPrice
     : 0
