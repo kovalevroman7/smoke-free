@@ -889,6 +889,21 @@ body {
   font-weight: 600;
 }
 
+.goals-card-add-btn {
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--primary);
+  border: none;
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .goal-widgets {
   display: flex;
   flex-direction: column;
