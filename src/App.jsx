@@ -1404,22 +1404,24 @@ function App() {
           <div className="modal modal-large" onClick={e => e.stopPropagation()}>
             <h3>{editingGoalId ? 'Редактировать цель' : 'Новая цель'}</h3>
 
-            <div className="settings-input-wrapper">
-              <label className="input-label">Тип цели</label>
-              <div className="goal-type-grid">
-                {Object.entries(GOAL_TYPES).map(([key, meta]) => (
-                  <button
-                    key={key}
-                    className={`goal-type-btn ${goalForm.type === key ? 'active' : ''}`}
-                    onClick={() => setGoalForm(f => ({ ...f, type: key }))}
-                  >
-                    <span className="goal-type-icon">{meta.icon}</span>
-                    <span className="goal-type-name">{meta.name}</span>
-                  </button>
-                ))}
+            {!editingGoalId && (
+              <div className="settings-input-wrapper">
+                <label className="input-label">Тип цели</label>
+                <div className="goal-type-grid">
+                  {Object.entries(GOAL_TYPES).map(([key, meta]) => (
+                    <button
+                      key={key}
+                      className={`goal-type-btn ${goalForm.type === key ? 'active' : ''}`}
+                      onClick={() => setGoalForm(f => ({ ...f, type: key }))}
+                    >
+                      <span className="goal-type-icon">{meta.icon}</span>
+                      <span className="goal-type-name">{meta.name}</span>
+                    </button>
+                  ))}
+                </div>
+                <p className="type-hint">{GOAL_TYPES[goalForm.type]?.description}</p>
               </div>
-              <p className="type-hint">{GOAL_TYPES[goalForm.type]?.description}</p>
-            </div>
+            )}
 
             {goalForm.type === 'silence' && (
               <>
