@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { useToast } from './hooks/useToast.js'
 import GoalModal from './GoalModal'
 import HomeTab from './HomeTab.jsx'
 import StatsTab from './StatsTab.jsx'
@@ -45,22 +46,8 @@ export default function App() {
   })
   const [openGoalSwipeId, setOpenGoalSwipeId] = useState(null)
   const [showAllLog, setShowAllLog] = useState(false)
-  const [toast, setToast] = useState(null)
+  const { toast, showToast } = useToast()
   const [timeSinceLast, setTimeSinceLast] = useState(0)
-  const toastTimerRef = useRef(null)
-
-  const showToast = useCallback((message) => {
-    setToast(message)
-    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-    toastTimerRef.current = setTimeout(() => setToast(null), 3500)
-  }, [])
-
-  useEffect(
-    () => () => {
-      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
-    },
-    []
-  )
 
   useEffect(() => {
     const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
