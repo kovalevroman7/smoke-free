@@ -763,18 +763,6 @@ function App() {
     .filter(t => getDateKey(t) === todayKey)
     .sort((a, b) => b - a)
 
-  const allLogGroups = (() => {
-    const sorted = [...data.cigarettes].sort((a, b) => b - a)
-    const groups = []
-    sorted.forEach(time => {
-      const key = getDateKey(time)
-      const last = groups[groups.length - 1]
-      if (!last || last.key !== key) groups.push({ key, items: [time] })
-      else last.items.push(time)
-    })
-    return groups
-  })()
-
   // Значения для режима сокращения
   const currentProgramDay = data.reductionConfig?.isConfigured
     ? getCurrentProgramDay(data.reductionConfig.startDate)
@@ -845,24 +833,8 @@ function App() {
                 </div>
 
                 <div className={`history-list${showAllLog ? ' history-list--expanded' : ''}`}>
-                  {showAllLog ? (
-                    allLogGroups.length === 0
-                      ? <div className="empty-state">Нет записей</div>
-                      : allLogGroups.map(({ key, items }) => (
-                        <div key={key} className="all-log-group">
-                          {items.map(time => {
-                            const originalIndex = data.cigarettes.indexOf(time)
-                            return (
-                              <div key={time} className="history-item clickable" onClick={() => startEditing(time, originalIndex)}>
-                                <span className="history-time">{new Date(time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
-                                <span className="history-ago">{formatTimeAgo(time)}</span>
-                              </div>
-                            )
-                          })}
-                        </div>
-                      ))
-                  ) : todayCigarettes.length > 0 ? (
-                    todayCigarettes.slice(0, 5).map((time, i) => {
+                  {todayCigarettes.length > 0 ? (
+                    (showAllLog ? todayCigarettes : todayCigarettes.slice(0, 5)).map((time, i) => {
                       const originalIndex = data.cigarettes.indexOf(time)
                       return (
                         <div
@@ -880,7 +852,7 @@ function App() {
                   ) : (
                     <div className="empty-state">Пока нет записей за сегодня</div>
                   )}
-                  {data.cigarettes.length > 0 && (
+                  {todayCigarettes.length > 5 && (
                     <button className="show-all-log-btn" onClick={() => setShowAllLog(v => !v)}>
                       {showAllLog ? 'Свернуть' : 'Показать всё'}
                     </button>
@@ -964,25 +936,8 @@ function App() {
                     </div>
 
                     <div className={`history-list${showAllLog ? ' history-list--expanded' : ''}`}>
-                      {showAllLog ? (
-                        allLogGroups.length === 0
-                          ? <div className="empty-state">Нет записей</div>
-                          : allLogGroups.map(({ key, items }) => (
-                            <div key={key} className="all-log-group">
-                              <div className="all-log-date">{formatDate(key)} — {items.length} шт</div>
-                              {items.map(time => {
-                                const originalIndex = data.cigarettes.indexOf(time)
-                                return (
-                                  <div key={time} className="history-item clickable" onClick={() => startEditing(time, originalIndex)}>
-                                    <span className="history-time">{new Date(time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
-                                    <span className="history-ago">{formatTimeAgo(time)}</span>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          ))
-                      ) : todayCigarettes.length > 0 ? (
-                        todayCigarettes.slice(0, 5).map((time, i) => {
+                      {todayCigarettes.length > 0 ? (
+                        (showAllLog ? todayCigarettes : todayCigarettes.slice(0, 5)).map((time, i) => {
                           const originalIndex = data.cigarettes.indexOf(time)
                           return (
                             <div
@@ -1000,7 +955,7 @@ function App() {
                       ) : (
                         <div className="empty-state">Пока нет записей за сегодня</div>
                       )}
-                      {data.cigarettes.length > 0 && (
+                      {todayCigarettes.length > 5 && (
                         <button className="show-all-log-btn" onClick={() => setShowAllLog(v => !v)}>
                           {showAllLog ? 'Свернуть' : 'Показать всё'}
                         </button>
@@ -1070,25 +1025,8 @@ function App() {
                     </div>
 
                     <div className={`history-list${showAllLog ? ' history-list--expanded' : ''}`}>
-                      {showAllLog ? (
-                        allLogGroups.length === 0
-                          ? <div className="empty-state">Нет записей</div>
-                          : allLogGroups.map(({ key, items }) => (
-                            <div key={key} className="all-log-group">
-                              <div className="all-log-date">{formatDate(key)} — {items.length} шт</div>
-                              {items.map(time => {
-                                const originalIndex = data.cigarettes.indexOf(time)
-                                return (
-                                  <div key={time} className="history-item clickable" onClick={() => startEditing(time, originalIndex)}>
-                                    <span className="history-time">{new Date(time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
-                                    <span className="history-ago">{formatTimeAgo(time)}</span>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          ))
-                      ) : todayCigarettes.length > 0 ? (
-                        todayCigarettes.slice(0, 5).map((time, i) => {
+                      {todayCigarettes.length > 0 ? (
+                        (showAllLog ? todayCigarettes : todayCigarettes.slice(0, 5)).map((time, i) => {
                           const originalIndex = data.cigarettes.indexOf(time)
                           return (
                             <div
@@ -1106,7 +1044,7 @@ function App() {
                       ) : (
                         <div className="empty-state">Пока нет записей за сегодня</div>
                       )}
-                      {data.cigarettes.length > 0 && (
+                      {todayCigarettes.length > 5 && (
                         <button className="show-all-log-btn" onClick={() => setShowAllLog(v => !v)}>
                           {showAllLog ? 'Свернуть' : 'Показать всё'}
                         </button>
