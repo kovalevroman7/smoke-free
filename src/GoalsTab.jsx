@@ -4,9 +4,14 @@ import { GOAL_TYPES } from './goalTypes.js'
 
 /** Вкладка целей: список правил курения с тоглом, свайп-редактированием и онбордингом. */
 export default function GoalsTab({
-  data, todayCigarettes,
-  openGoalSwipeId, setOpenGoalSwipeId,
-  onCreateGoal, onEditGoal, onDeleteGoal, onToggleGoal
+  data,
+  todayCigarettes,
+  openGoalSwipeId,
+  setOpenGoalSwipeId,
+  onCreateGoal,
+  onEditGoal,
+  onDeleteGoal,
+  onToggleGoal,
 }) {
   const goals = data.goals || []
 
@@ -21,24 +26,37 @@ export default function GoalsTab({
           <div className="setup-icon">🎯</div>
           <h3 style={{ fontSize: 18, marginBottom: 12 }}>Что такое цели?</h3>
           <p style={{ marginBottom: 16, lineHeight: 1.5 }}>
-            Цели — это гибкие правила курения, которые помогают постепенно изменить привычки без жёсткого ограничения количества.
+            Цели — это гибкие правила курения, которые помогают постепенно изменить привычки без
+            жёсткого ограничения количества.
           </p>
           <div className="goal-examples">
             <div className="goal-example">
               <span className="goal-example-icon">🌙</span>
-              <div><strong>Окно тишины</strong><p>Не курить с 22:00 до 8:00</p></div>
+              <div>
+                <strong>Окно тишины</strong>
+                <p>Не курить с 22:00 до 8:00</p>
+              </div>
             </div>
             <div className="goal-example">
               <span className="goal-example-icon">⏰</span>
-              <div><strong>Лимит до времени</strong><p>Не более 1 сигареты до 11:00</p></div>
+              <div>
+                <strong>Лимит до времени</strong>
+                <p>Не более 1 сигареты до 11:00</p>
+              </div>
             </div>
             <div className="goal-example">
               <span className="goal-example-icon">🌅</span>
-              <div><strong>Утренний интервал</strong><p>Между первыми 3 — минимум 30 мин</p></div>
+              <div>
+                <strong>Утренний интервал</strong>
+                <p>Между первыми 3 — минимум 30 мин</p>
+              </div>
             </div>
             <div className="goal-example">
               <span className="goal-example-icon">🌆</span>
-              <div><strong>Вечерний интервал</strong><p>После 20:00 — минимум 30 мин</p></div>
+              <div>
+                <strong>Вечерний интервал</strong>
+                <p>После 20:00 — минимум 30 мин</p>
+              </div>
             </div>
           </div>
           <button className="setup-btn" style={{ marginTop: 16 }} onClick={onCreateGoal}>
@@ -56,7 +74,7 @@ export default function GoalsTab({
         Гибкие правила вместо жёсткого лимита
       </p>
       <div className="goals-list">
-        {goals.map(goal => {
+        {goals.map((goal) => {
           const meta = GOAL_TYPES[goal.type]
           const result = evaluateGoal(goal, todayCigarettes, Date.now())
           return (
@@ -75,7 +93,7 @@ export default function GoalsTab({
                   <div className="goal-row-label">{result.label}</div>
                   <div className="goal-row-hint">{goal.enabled ? result.hint : 'отключена'}</div>
                 </div>
-                <label className="goal-toggle" onClick={e => e.stopPropagation()}>
+                <label className="goal-toggle" onClick={(e) => e.stopPropagation()}>
                   <input
                     type="checkbox"
                     checked={goal.enabled}

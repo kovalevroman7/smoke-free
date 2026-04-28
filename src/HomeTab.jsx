@@ -4,13 +4,20 @@ import { GOAL_TYPES } from './goalTypes.js'
 
 /** Главная вкладка: таймер без сигареты, кнопки действий, активные цели, лог за сегодня. */
 export default function HomeTab({
-  data, timeSinceLast, todayCigarettes, todaySmoked,
-  showAllLog, setShowAllLog,
-  onAddCigarette, onOpenAddModal, onOpenCreateGoal,
-  onStartEditing, onSetActiveTab
+  data,
+  timeSinceLast,
+  todayCigarettes,
+  todaySmoked,
+  showAllLog,
+  setShowAllLog,
+  onAddCigarette,
+  onOpenAddModal,
+  onOpenCreateGoal,
+  onStartEditing,
+  onSetActiveTab,
 }) {
   const goals = data.goals || []
-  const enabledGoals = goals.filter(g => g.enabled)
+  const enabledGoals = goals.filter((g) => g.enabled)
 
   return (
     <>
@@ -24,8 +31,12 @@ export default function HomeTab({
       </div>
 
       <div className="action-row">
-        <button className="smoke-btn" onClick={onAddCigarette}>Выкурил сигарету</button>
-        <button className="add-manual-btn" onClick={onOpenAddModal}>+ Добавить вручную</button>
+        <button className="smoke-btn" onClick={onAddCigarette}>
+          Выкурил сигарету
+        </button>
+        <button className="add-manual-btn" onClick={onOpenAddModal}>
+          + Добавить вручную
+        </button>
       </div>
 
       {enabledGoals.length === 0 ? (
@@ -33,16 +44,20 @@ export default function HomeTab({
           <div className="setup-icon">🎯</div>
           <h2>Цели не заданы</h2>
           <p>Перейдите во вкладку «Цели», чтобы создать первую цель</p>
-          <button className="setup-btn" onClick={() => onSetActiveTab('goals')}>К целям</button>
+          <button className="setup-btn" onClick={() => onSetActiveTab('goals')}>
+            К целям
+          </button>
         </div>
       ) : (
         <div className="goals-card">
           <div className="goals-card-header">
             <h2>Активные цели</h2>
-            <button className="goals-card-add-btn" onClick={onOpenCreateGoal}>+</button>
+            <button className="goals-card-add-btn" onClick={onOpenCreateGoal}>
+              +
+            </button>
           </div>
           <div className="goal-widgets">
-            {enabledGoals.map(goal => {
+            {enabledGoals.map((goal) => {
               const result = evaluateGoal(goal, todayCigarettes, Date.now())
               const meta = GOAL_TYPES[goal.type]
               return (
@@ -75,7 +90,10 @@ export default function HomeTab({
                   onClick={() => onStartEditing(time, originalIndex)}
                 >
                   <span className="history-time">
-                    {new Date(time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                    {new Date(time).toLocaleTimeString('ru-RU', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </span>
                   <span className="history-ago">{formatTimeAgo(time)}</span>
                 </div>
@@ -85,7 +103,7 @@ export default function HomeTab({
             <div className="empty-state">Пока нет записей за сегодня</div>
           )}
           {todayCigarettes.length > 5 && (
-            <button className="show-all-log-btn" onClick={() => setShowAllLog(v => !v)}>
+            <button className="show-all-log-btn" onClick={() => setShowAllLog((v) => !v)}>
               {showAllLog ? 'Свернуть' : 'Показать всё'}
             </button>
           )}

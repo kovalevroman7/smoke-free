@@ -1,9 +1,12 @@
 /** Вкладка настроек: стоимость пачки, количество сигарет в пачке, час начала дня. */
 export default function SettingsTab({
-  settingsPackPrice, setSettingsPackPrice,
-  settingsCigarettesPerPack, setSettingsCigarettesPerPack,
-  settingsDayStartHour, setSettingsDayStartHour,
-  onSave
+  settingsPackPrice,
+  setSettingsPackPrice,
+  settingsCigarettesPerPack,
+  setSettingsCigarettesPerPack,
+  settingsDayStartHour,
+  setSettingsDayStartHour,
+  onSave,
 }) {
   return (
     <div className="stats-card">
@@ -17,7 +20,7 @@ export default function SettingsTab({
             type="number"
             className="settings-input"
             value={settingsPackPrice}
-            onChange={e => setSettingsPackPrice(e.target.value)}
+            onChange={(e) => setSettingsPackPrice(e.target.value)}
             placeholder="0"
             min="0"
           />
@@ -28,7 +31,7 @@ export default function SettingsTab({
             type="number"
             className="settings-input"
             value={settingsCigarettesPerPack}
-            onChange={e => setSettingsCigarettesPerPack(e.target.value)}
+            onChange={(e) => setSettingsCigarettesPerPack(e.target.value)}
             placeholder="20"
             min="1"
           />
@@ -39,16 +42,19 @@ export default function SettingsTab({
             type="number"
             className="settings-input"
             value={settingsDayStartHour}
-            onChange={e => setSettingsDayStartHour(e.target.value)}
+            onChange={(e) => setSettingsDayStartHour(e.target.value)}
             placeholder="0"
             min="0"
             max="12"
           />
           <p style={{ marginTop: 6, fontSize: 12, color: 'var(--text-secondary)' }}>
-            Активность до этого часа считается прошедшим днём. Например, при значении 4 сигарета в 02:00 относится ко вчера.
+            Активность до этого часа считается прошедшим днём. Например, при значении 4 сигарета в
+            02:00 относится ко вчера.
           </p>
         </div>
-        <button className="save-settings-btn" onClick={onSave}>Сохранить</button>
+        <button className="save-settings-btn" onClick={onSave}>
+          Сохранить
+        </button>
       </div>
     </div>
   )

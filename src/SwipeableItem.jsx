@@ -38,8 +38,12 @@ export default function SwipeableItem({ children, onEdit, onDelete, isOpen, onTo
   return (
     <div className="swipeable-container">
       <div className="swipeable-actions">
-        <button className="swipe-btn edit" onClick={onEdit}>✏️</button>
-        <button className="swipe-btn delete" onClick={onDelete}>🗑️</button>
+        <button className="swipe-btn edit" onClick={onEdit}>
+          ✏️
+        </button>
+        <button className="swipe-btn delete" onClick={onDelete}>
+          🗑️
+        </button>
       </div>
       <div
         ref={containerRef}

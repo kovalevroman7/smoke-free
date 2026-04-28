@@ -1,9 +1,16 @@
 import { GOAL_TYPES } from './goalTypes'
 
-export default function GoalModal({ editingGoalId, goalForm, setGoalForm, onSave, onDelete, onClose }) {
+export default function GoalModal({
+  editingGoalId,
+  goalForm,
+  setGoalForm,
+  onSave,
+  onDelete,
+  onClose,
+}) {
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal modal-large" onClick={e => e.stopPropagation()}>
+      <div className="modal modal-large" onClick={(e) => e.stopPropagation()}>
         <h3>{editingGoalId ? 'Редактировать цель' : 'Новая цель'}</h3>
 
         {!editingGoalId && (
@@ -14,7 +21,7 @@ export default function GoalModal({ editingGoalId, goalForm, setGoalForm, onSave
                 <button
                   key={key}
                   className={`goal-type-btn ${goalForm.type === key ? 'active' : ''}`}
-                  onClick={() => setGoalForm(f => ({ ...f, type: key }))}
+                  onClick={() => setGoalForm((f) => ({ ...f, type: key }))}
                 >
                   <span className="goal-type-icon">{meta.icon}</span>
                   <span className="goal-type-name">{meta.name}</span>
@@ -33,7 +40,7 @@ export default function GoalModal({ editingGoalId, goalForm, setGoalForm, onSave
                 type="time"
                 className="settings-input"
                 value={goalForm.from}
-                onChange={e => setGoalForm(f => ({ ...f, from: e.target.value }))}
+                onChange={(e) => setGoalForm((f) => ({ ...f, from: e.target.value }))}
               />
             </div>
             <div className="settings-input-wrapper">
@@ -42,7 +49,7 @@ export default function GoalModal({ editingGoalId, goalForm, setGoalForm, onSave
                 type="time"
                 className="settings-input"
                 value={goalForm.to}
-                onChange={e => setGoalForm(f => ({ ...f, to: e.target.value }))}
+                onChange={(e) => setGoalForm((f) => ({ ...f, to: e.target.value }))}
               />
             </div>
           </>
@@ -56,7 +63,7 @@ export default function GoalModal({ editingGoalId, goalForm, setGoalForm, onSave
                 type="number"
                 className="settings-input"
                 value={goalForm.maxCount}
-                onChange={e => setGoalForm(f => ({ ...f, maxCount: e.target.value }))}
+                onChange={(e) => setGoalForm((f) => ({ ...f, maxCount: e.target.value }))}
                 min="0"
               />
             </div>
@@ -66,7 +73,7 @@ export default function GoalModal({ editingGoalId, goalForm, setGoalForm, onSave
                 type="time"
                 className="settings-input"
                 value={goalForm.beforeTime}
-                onChange={e => setGoalForm(f => ({ ...f, beforeTime: e.target.value }))}
+                onChange={(e) => setGoalForm((f) => ({ ...f, beforeTime: e.target.value }))}
               />
             </div>
           </>
@@ -80,7 +87,7 @@ export default function GoalModal({ editingGoalId, goalForm, setGoalForm, onSave
                 type="number"
                 className="settings-input"
                 value={goalForm.count}
-                onChange={e => setGoalForm(f => ({ ...f, count: e.target.value }))}
+                onChange={(e) => setGoalForm((f) => ({ ...f, count: e.target.value }))}
                 min="2"
               />
             </div>
@@ -90,7 +97,7 @@ export default function GoalModal({ editingGoalId, goalForm, setGoalForm, onSave
                 type="number"
                 className="settings-input"
                 value={goalForm.intervalMinutes}
-                onChange={e => setGoalForm(f => ({ ...f, intervalMinutes: e.target.value }))}
+                onChange={(e) => setGoalForm((f) => ({ ...f, intervalMinutes: e.target.value }))}
                 min="1"
               />
             </div>
@@ -105,7 +112,7 @@ export default function GoalModal({ editingGoalId, goalForm, setGoalForm, onSave
                 type="time"
                 className="settings-input"
                 value={goalForm.afterTime}
-                onChange={e => setGoalForm(f => ({ ...f, afterTime: e.target.value }))}
+                onChange={(e) => setGoalForm((f) => ({ ...f, afterTime: e.target.value }))}
               />
             </div>
             <div className="settings-input-wrapper">
@@ -114,7 +121,7 @@ export default function GoalModal({ editingGoalId, goalForm, setGoalForm, onSave
                 type="number"
                 className="settings-input"
                 value={goalForm.intervalMinutes}
-                onChange={e => setGoalForm(f => ({ ...f, intervalMinutes: e.target.value }))}
+                onChange={(e) => setGoalForm((f) => ({ ...f, intervalMinutes: e.target.value }))}
                 min="1"
               />
             </div>

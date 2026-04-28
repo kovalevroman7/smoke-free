@@ -28,7 +28,8 @@ export function getCompactGoalLabel(goal) {
   const p = goal.params || {}
   if (goal.type === 'silence') return `Тишина ${p.from}–${p.to}`
   if (goal.type === 'limit_before') return `До ${p.beforeTime}: ≤${p.maxCount}`
-  if (goal.type === 'morning_interval') return `Первые ${p.count} с интервалом ${p.intervalMinutes} мин`
+  if (goal.type === 'morning_interval')
+    return `Первые ${p.count} с интервалом ${p.intervalMinutes} мин`
   if (goal.type === 'evening_interval') return `После ${p.afterTime}: ≥${p.intervalMinutes} мин`
   return GOAL_TYPES[goal.type]?.name || ''
 }
@@ -40,32 +41,59 @@ export function evaluateGoal(goal, dayCigarettes, now) {
   if (goal.type === 'silence') {
     const fromMin = parseHHMM(goal.params.from)
     const toMin = parseHHMM(goal.params.to)
-    const isInWindow = (m) => fromMin <= toMin
-      ? (m >= fromMin && m < toMin)
-      : (m >= fromMin || m < toMin)
-    const violated = sortedCigs.some(t => isInWindow(getMinutesOfDay(t)))
-    if (violated) return { status: 'fail', label: `Окно тишины ${goal.params.from}–${goal.params.to}`, hint: 'нарушено' }
+    const isInWindow = (m) =>
+      fromMin <= toMin ? m >= fromMin && m < toMin : m >= fromMin || m < toMin
+    const violated = sortedCigs.some((t) => isInWindow(getMinutesOfDay(t)))
+    if (violated)
+      return {
+        status: 'fail',
+        label: `Окно тишины ${goal.params.from}–${goal.params.to}`,
+        hint: 'нарушено',
+      }
     const inWindowNow = isInWindow(nowMinutes)
     if (inWindowNow) {
-      const minutesLeft = fromMin <= toMin
-        ? toMin - nowMinutes
-        : (nowMinutes < toMin ? toMin - nowMinutes : (1440 - nowMinutes) + toMin)
-      return { status: 'active', label: `В окне тишины ${goal.params.from}–${goal.params.to}`, hint: `до конца ${formatDuration(minutesLeft)}` }
+      const minutesLeft =
+        fromMin <= toMin
+          ? toMin - nowMinutes
+          : nowMinutes < toMin
+            ? toMin - nowMinutes
+            : 1440 - nowMinutes + toMin
+      return {
+        status: 'active',
+        label: `В окне тишины ${goal.params.from}–${goal.params.to}`,
+        hint: `до конца ${formatDuration(minutesLeft)}`,
+      }
     }
-    const minutesUntil = nowMinutes < fromMin
-      ? fromMin - nowMinutes
-      : (1440 - nowMinutes) + fromMin
-    return { status: 'pending', label: `Тишина с ${goal.params.from} до ${goal.params.to}`, hint: `через ${formatDuration(minutesUntil)}` }
+    const minutesUntil = nowMinutes < fromMin ? fromMin - nowMinutes : 1440 - nowMinutes + fromMin
+    return {
+      status: 'pending',
+      label: `Тишина с ${goal.params.from} до ${goal.params.to}`,
+      hint: `через ${formatDuration(minutesUntil)}`,
+    }
   }
 
   if (goal.type === 'limit_before') {
     const beforeMin = parseHHMM(goal.params.beforeTime)
-    const count = sortedCigs.filter(t => getMinutesOfDay(t) < beforeMin).length
+    const count = sortedCigs.filter((t) => getMinutesOfDay(t) < beforeMin).length
     const max = goal.params.maxCount
     const passed = nowMinutes >= beforeMin
-    if (count > max) return { status: 'fail', label: `До ${goal.params.beforeTime}: ${count}/${max}`, hint: 'превышен лимит' }
-    if (passed) return { status: 'success', label: `До ${goal.params.beforeTime}: ${count}/${max}`, hint: 'выполнено' }
-    return { status: 'pending', label: `До ${goal.params.beforeTime}: ${count}/${max}`, hint: `осталось ${formatDuration(beforeMin - nowMinutes)}` }
+    if (count > max)
+      return {
+        status: 'fail',
+        label: `До ${goal.params.beforeTime}: ${count}/${max}`,
+        hint: 'превышен лимит',
+      }
+    if (passed)
+      return {
+        status: 'success',
+        label: `До ${goal.params.beforeTime}: ${count}/${max}`,
+        hint: 'выполнено',
+      }
+    return {
+      status: 'pending',
+      label: `До ${goal.params.beforeTime}: ${count}/${max}`,
+      hint: `осталось ${formatDuration(beforeMin - nowMinutes)}`,
+    }
   }
 
   if (goal.type === 'morning_interval') {
@@ -74,41 +102,67 @@ export function evaluateGoal(goal, dayCigarettes, now) {
     const firstN = sortedCigs.slice(0, N)
     for (let i = 1; i < firstN.length; i++) {
       if (firstN[i] - firstN[i - 1] < intervalMs)
-        return { status: 'fail', label: `Между первыми ${N} ≥ ${goal.params.intervalMinutes} мин`, hint: 'интервал нарушен' }
+        return {
+          status: 'fail',
+          label: `Между первыми ${N} ≥ ${goal.params.intervalMinutes} мин`,
+          hint: 'интервал нарушен',
+        }
     }
     if (firstN.length === N)
-      return { status: 'success', label: `Первые ${N} с интервалом ${goal.params.intervalMinutes} мин`, hint: 'выполнено' }
+      return {
+        status: 'success',
+        label: `Первые ${N} с интервалом ${goal.params.intervalMinutes} мин`,
+        hint: 'выполнено',
+      }
     if (firstN.length === 0)
-      return { status: 'pending', label: `Первые ${N} с интервалом ${goal.params.intervalMinutes} мин`, hint: `0/${N}` }
+      return {
+        status: 'pending',
+        label: `Первые ${N} с интервалом ${goal.params.intervalMinutes} мин`,
+        hint: `0/${N}`,
+      }
     const remaining = Math.max(0, firstN[firstN.length - 1] + intervalMs - now)
     return {
       status: 'pending',
       label: `Первые ${N} с интервалом ${goal.params.intervalMinutes} мин`,
-      hint: remaining > 0
-        ? `${firstN.length}/${N}, следующая через ${formatDuration(Math.ceil(remaining / 60000))}`
-        : `${firstN.length}/${N}, можно следующую`
+      hint:
+        remaining > 0
+          ? `${firstN.length}/${N}, следующая через ${formatDuration(Math.ceil(remaining / 60000))}`
+          : `${firstN.length}/${N}, можно следующую`,
     }
   }
 
   if (goal.type === 'evening_interval') {
     const afterMin = parseHHMM(goal.params.afterTime)
     const intervalMs = goal.params.intervalMinutes * 60 * 1000
-    const eveningCigs = sortedCigs.filter(t => getMinutesOfDay(t) >= afterMin)
+    const eveningCigs = sortedCigs.filter((t) => getMinutesOfDay(t) >= afterMin)
     for (let i = 1; i < eveningCigs.length; i++) {
       if (eveningCigs[i] - eveningCigs[i - 1] < intervalMs)
-        return { status: 'fail', label: `После ${goal.params.afterTime}: интервал ≥ ${goal.params.intervalMinutes} мин`, hint: 'интервал нарушен' }
+        return {
+          status: 'fail',
+          label: `После ${goal.params.afterTime}: интервал ≥ ${goal.params.intervalMinutes} мин`,
+          hint: 'интервал нарушен',
+        }
     }
     if (nowMinutes < afterMin)
-      return { status: 'pending', label: `После ${goal.params.afterTime}: интервал ≥ ${goal.params.intervalMinutes} мин`, hint: `активна с ${goal.params.afterTime}` }
+      return {
+        status: 'pending',
+        label: `После ${goal.params.afterTime}: интервал ≥ ${goal.params.intervalMinutes} мин`,
+        hint: `активна с ${goal.params.afterTime}`,
+      }
     if (eveningCigs.length === 0)
-      return { status: 'active', label: `После ${goal.params.afterTime}: интервал ≥ ${goal.params.intervalMinutes} мин`, hint: 'пока 0 сигарет' }
+      return {
+        status: 'active',
+        label: `После ${goal.params.afterTime}: интервал ≥ ${goal.params.intervalMinutes} мин`,
+        hint: 'пока 0 сигарет',
+      }
     const remaining = Math.max(0, eveningCigs[eveningCigs.length - 1] + intervalMs - now)
     return {
       status: 'active',
       label: `После ${goal.params.afterTime}: интервал ≥ ${goal.params.intervalMinutes} мин`,
-      hint: remaining > 0
-        ? `следующая через ${formatDuration(Math.ceil(remaining / 60000))}`
-        : 'можно следующую'
+      hint:
+        remaining > 0
+          ? `следующая через ${formatDuration(Math.ceil(remaining / 60000))}`
+          : 'можно следующую',
     }
   }
 
@@ -136,13 +190,18 @@ export function getGoalSuccessRate(goal, cigarettes, startTimestamp) {
   const endKey = getDateKey(Date.now())
   const cursor = new Date(`${startKey}T00:00:00`)
   const end = new Date(`${endKey}T00:00:00`)
-  let total = 0, success = 0
+  let total = 0,
+    success = 0
   while (cursor.getTime() <= end.getTime()) {
     const dayKey = getDateKey(cursor.getTime())
-    const dayCigs = cigarettes.filter(c => getDateKey(c) === dayKey)
+    const dayCigs = cigarettes.filter((c) => getDateKey(c) === dayKey)
     const status = getGoalDayStatus(goal, dayCigs, dayKey)
-    if (status === 'success') { total++; success++ }
-    else if (status === 'fail') { total++ }
+    if (status === 'success') {
+      total++
+      success++
+    } else if (status === 'fail') {
+      total++
+    }
     cursor.setDate(cursor.getDate() + 1)
   }
   if (total === 0) return null

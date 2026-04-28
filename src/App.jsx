@@ -24,15 +24,24 @@ export default function App() {
   const [addHours, setAddHours] = useState('')
   const [addMinutes, setAddMinutes] = useState('')
   const [settingsPackPrice, setSettingsPackPrice] = useState(data.packPrice?.toString() || '')
-  const [settingsCigarettesPerPack, setSettingsCigarettesPerPack] = useState(data.cigarettesPerPack?.toString() || '20')
-  const [settingsDayStartHour, setSettingsDayStartHour] = useState((data.dayStartHour ?? 0).toString())
+  const [settingsCigarettesPerPack, setSettingsCigarettesPerPack] = useState(
+    data.cigarettesPerPack?.toString() || '20'
+  )
+  const [settingsDayStartHour, setSettingsDayStartHour] = useState(
+    (data.dayStartHour ?? 0).toString()
+  )
   const [openSwipeIndex, setOpenSwipeIndex] = useState(null)
   const [showGoalModal, setShowGoalModal] = useState(false)
   const [editingGoalId, setEditingGoalId] = useState(null)
   const [goalForm, setGoalForm] = useState({
-    type: 'silence', from: '22:00', to: '08:00',
-    beforeTime: '11:00', maxCount: '1',
-    count: '3', intervalMinutes: '30', afterTime: '20:00'
+    type: 'silence',
+    from: '22:00',
+    to: '08:00',
+    beforeTime: '11:00',
+    maxCount: '1',
+    count: '3',
+    intervalMinutes: '30',
+    afterTime: '20:00',
   })
   const [openGoalSwipeId, setOpenGoalSwipeId] = useState(null)
   const [showAllLog, setShowAllLog] = useState(false)
@@ -46,7 +55,12 @@ export default function App() {
     toastTimerRef.current = setTimeout(() => setToast(null), 3500)
   }, [])
 
-  useEffect(() => () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current) }, [])
+  useEffect(
+    () => () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    },
+    []
+  )
 
   useEffect(() => {
     const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
@@ -57,22 +71,28 @@ export default function App() {
 
   useEffect(() => {
     if (!data.goals?.length) return
-    const interval = setInterval(() => setTimeSinceLast(t => t), 30000)
+    const interval = setInterval(() => setTimeSinceLast((t) => t), 30000)
     return () => clearInterval(interval)
   }, [data.goals?.length])
 
-  useEffect(() => { saveData(data) }, [data])
-  useEffect(() => { setDayStartHour(data.dayStartHour) }, [data.dayStartHour])
+  useEffect(() => {
+    saveData(data)
+  }, [data])
+  useEffect(() => {
+    setDayStartHour(data.dayStartHour)
+  }, [data.dayStartHour])
 
   const addCigarette = useCallback(() => {
     const now = Date.now()
-    setData(prev => {
+    setData((prev) => {
       if (prev.goals?.length) {
         const todayKey = getDateKey(now)
-        const todayCigs = prev.cigarettes.filter(t => getDateKey(t) === todayKey)
-        const violated = prev.goals.filter(g => g.enabled).filter(g => checkGoalViolationOnAdd(g, todayCigs, now))
+        const todayCigs = prev.cigarettes.filter((t) => getDateKey(t) === todayKey)
+        const violated = prev.goals
+          .filter((g) => g.enabled)
+          .filter((g) => checkGoalViolationOnAdd(g, todayCigs, now))
         if (violated.length > 0) {
-          const names = violated.map(g => GOAL_TYPES[g.type]?.name || g.type).join(', ')
+          const names = violated.map((g) => GOAL_TYPES[g.type]?.name || g.type).join(', ')
           setTimeout(() => showToast(`Нарушает цель: ${names}`), 0)
         }
       }
@@ -91,25 +111,34 @@ export default function App() {
     if (editingIndex === null) return
     const date = new Date(data.cigarettes[editingIndex])
     date.setHours(parseInt(editHours, 10) || 0, parseInt(editMinutes, 10) || 0, 0, 0)
-    setData(prev => ({
+    setData((prev) => ({
       ...prev,
-      cigarettes: prev.cigarettes.map((t, i) => i === editingIndex ? date.getTime() : t)
+      cigarettes: prev.cigarettes.map((t, i) => (i === editingIndex ? date.getTime() : t)),
     }))
-    setEditingIndex(null); setEditHours(''); setEditMinutes('')
+    setEditingIndex(null)
+    setEditHours('')
+    setEditMinutes('')
   }, [editingIndex, editHours, editMinutes, data.cigarettes])
 
   const cancelEditing = useCallback(() => {
-    setEditingIndex(null); setEditHours(''); setEditMinutes('')
+    setEditingIndex(null)
+    setEditHours('')
+    setEditMinutes('')
   }, [])
 
   const deleteCigarette = useCallback(() => {
     if (editingIndex === null) return
-    setData(prev => ({ ...prev, cigarettes: prev.cigarettes.filter((_, i) => i !== editingIndex) }))
-    setEditingIndex(null); setEditHours(''); setEditMinutes('')
+    setData((prev) => ({
+      ...prev,
+      cigarettes: prev.cigarettes.filter((_, i) => i !== editingIndex),
+    }))
+    setEditingIndex(null)
+    setEditHours('')
+    setEditMinutes('')
   }, [editingIndex])
 
   const deleteCigaretteByIndex = useCallback((index) => {
-    setData(prev => ({ ...prev, cigarettes: prev.cigarettes.filter((_, i) => i !== index) }))
+    setData((prev) => ({ ...prev, cigarettes: prev.cigarettes.filter((_, i) => i !== index) }))
     setOpenSwipeIndex(null)
   }, [])
 
@@ -122,31 +151,43 @@ export default function App() {
   }, [])
 
   const closeAddModal = useCallback(() => {
-    setShowAddModal(false); setAddDate(''); setAddHours(''); setAddMinutes('')
+    setShowAddModal(false)
+    setAddDate('')
+    setAddHours('')
+    setAddMinutes('')
   }, [])
 
   const saveManualCigarette = useCallback(() => {
     const date = new Date(addDate)
     date.setHours(parseInt(addHours, 10) || 0, parseInt(addMinutes, 10) || 0, 0, 0)
-    setData(prev => ({
+    setData((prev) => ({
       ...prev,
-      cigarettes: [...prev.cigarettes, date.getTime()].sort((a, b) => a - b)
+      cigarettes: [...prev.cigarettes, date.getTime()].sort((a, b) => a - b),
     }))
     closeAddModal()
   }, [addDate, addHours, addMinutes, closeAddModal])
 
   const saveSettings = useCallback(() => {
-    setData(prev => ({
+    setData((prev) => ({
       ...prev,
       packPrice: parseFloat(settingsPackPrice) || 0,
       cigarettesPerPack: parseInt(settingsCigarettesPerPack, 10) || 20,
-      dayStartHour: Math.max(0, Math.min(12, parseInt(settingsDayStartHour, 10) || 0))
+      dayStartHour: Math.max(0, Math.min(12, parseInt(settingsDayStartHour, 10) || 0)),
     }))
   }, [settingsPackPrice, settingsCigarettesPerPack, settingsDayStartHour])
 
   const openCreateGoal = useCallback(() => {
     setEditingGoalId(null)
-    setGoalForm({ type: 'silence', from: '22:00', to: '08:00', beforeTime: '11:00', maxCount: '1', count: '3', intervalMinutes: '30', afterTime: '20:00' })
+    setGoalForm({
+      type: 'silence',
+      from: '22:00',
+      to: '08:00',
+      beforeTime: '11:00',
+      maxCount: '1',
+      count: '3',
+      intervalMinutes: '30',
+      afterTime: '20:00',
+    })
     setShowGoalModal(true)
   }, [])
 
@@ -154,12 +195,13 @@ export default function App() {
     setEditingGoalId(goal.id)
     setGoalForm({
       type: goal.type,
-      from: goal.params.from || '22:00', to: goal.params.to || '08:00',
+      from: goal.params.from || '22:00',
+      to: goal.params.to || '08:00',
       beforeTime: goal.params.beforeTime || '11:00',
       maxCount: goal.params.maxCount?.toString() || '1',
       count: goal.params.count?.toString() || '3',
       intervalMinutes: goal.params.intervalMinutes?.toString() || '30',
-      afterTime: goal.params.afterTime || '20:00'
+      afterTime: goal.params.afterTime || '20:00',
     })
     setShowGoalModal(true)
     setOpenGoalSwipeId(null)
@@ -168,111 +210,175 @@ export default function App() {
   const saveGoal = useCallback(() => {
     let params = {}
     if (goalForm.type === 'silence') params = { from: goalForm.from, to: goalForm.to }
-    else if (goalForm.type === 'limit_before') params = { beforeTime: goalForm.beforeTime, maxCount: parseInt(goalForm.maxCount, 10) || 1 }
-    else if (goalForm.type === 'morning_interval') params = { count: parseInt(goalForm.count, 10) || 3, intervalMinutes: parseInt(goalForm.intervalMinutes, 10) || 30 }
-    else if (goalForm.type === 'evening_interval') params = { afterTime: goalForm.afterTime, intervalMinutes: parseInt(goalForm.intervalMinutes, 10) || 30 }
-    setData(prev => {
+    else if (goalForm.type === 'limit_before')
+      params = { beforeTime: goalForm.beforeTime, maxCount: parseInt(goalForm.maxCount, 10) || 1 }
+    else if (goalForm.type === 'morning_interval')
+      params = {
+        count: parseInt(goalForm.count, 10) || 3,
+        intervalMinutes: parseInt(goalForm.intervalMinutes, 10) || 30,
+      }
+    else if (goalForm.type === 'evening_interval')
+      params = {
+        afterTime: goalForm.afterTime,
+        intervalMinutes: parseInt(goalForm.intervalMinutes, 10) || 30,
+      }
+    setData((prev) => {
       const goals = prev.goals || []
       const nextGoals = editingGoalId
-        ? goals.map(g => g.id === editingGoalId ? { ...g, type: goalForm.type, params } : g)
-        : [...goals, { id: generateGoalId(), type: goalForm.type, enabled: true, params, createdAt: Date.now() }]
+        ? goals.map((g) => (g.id === editingGoalId ? { ...g, type: goalForm.type, params } : g))
+        : [
+            ...goals,
+            {
+              id: generateGoalId(),
+              type: goalForm.type,
+              enabled: true,
+              params,
+              createdAt: Date.now(),
+            },
+          ]
       return { ...prev, goals: nextGoals }
     })
-    setShowGoalModal(false); setEditingGoalId(null)
+    setShowGoalModal(false)
+    setEditingGoalId(null)
   }, [goalForm, editingGoalId])
 
   const deleteGoal = useCallback((goalId) => {
-    setData(prev => ({ ...prev, goals: (prev.goals || []).filter(g => g.id !== goalId) }))
+    setData((prev) => ({ ...prev, goals: (prev.goals || []).filter((g) => g.id !== goalId) }))
     setOpenGoalSwipeId(null)
   }, [])
 
   const toggleGoalEnabled = useCallback((goalId) => {
-    setData(prev => ({
+    setData((prev) => ({
       ...prev,
-      goals: (prev.goals || []).map(g => g.id === goalId ? { ...g, enabled: !g.enabled } : g)
+      goals: (prev.goals || []).map((g) => (g.id === goalId ? { ...g, enabled: !g.enabled } : g)),
     }))
   }, [])
 
   const todayKey = getDateKey(Date.now())
-  const todayCigarettes = data.cigarettes.filter(t => getDateKey(t) === todayKey).sort((a, b) => b - a)
+  const todayCigarettes = data.cigarettes
+    .filter((t) => getDateKey(t) === todayKey)
+    .sort((a, b) => b - a)
   const todaySmoked = getTodaySmokedCount(data.cigarettes)
 
   return (
     <div className="app">
       {activeTab === 'home' && (
         <HomeTab
-          data={data} timeSinceLast={timeSinceLast}
-          todayCigarettes={todayCigarettes} todaySmoked={todaySmoked}
-          showAllLog={showAllLog} setShowAllLog={setShowAllLog}
-          onAddCigarette={addCigarette} onOpenAddModal={openAddModal}
-          onOpenCreateGoal={openCreateGoal} onStartEditing={startEditing}
+          data={data}
+          timeSinceLast={timeSinceLast}
+          todayCigarettes={todayCigarettes}
+          todaySmoked={todaySmoked}
+          showAllLog={showAllLog}
+          setShowAllLog={setShowAllLog}
+          onAddCigarette={addCigarette}
+          onOpenAddModal={openAddModal}
+          onOpenCreateGoal={openCreateGoal}
+          onStartEditing={startEditing}
           onSetActiveTab={setActiveTab}
         />
       )}
 
       {activeTab === 'stats' && (
         <StatsTab
-          data={data} statsPeriod={statsPeriod} setStatsPeriod={setStatsPeriod}
-          selectedDay={selectedDay} setSelectedDay={setSelectedDay}
-          openSwipeIndex={openSwipeIndex} setOpenSwipeIndex={setOpenSwipeIndex}
-          onStartEditing={startEditing} onDeleteByIndex={deleteCigaretteByIndex}
+          data={data}
+          statsPeriod={statsPeriod}
+          setStatsPeriod={setStatsPeriod}
+          selectedDay={selectedDay}
+          setSelectedDay={setSelectedDay}
+          openSwipeIndex={openSwipeIndex}
+          setOpenSwipeIndex={setOpenSwipeIndex}
+          onStartEditing={startEditing}
+          onDeleteByIndex={deleteCigaretteByIndex}
         />
       )}
 
       {activeTab === 'goals' && (
         <GoalsTab
-          data={data} todayCigarettes={todayCigarettes}
-          openGoalSwipeId={openGoalSwipeId} setOpenGoalSwipeId={setOpenGoalSwipeId}
-          onCreateGoal={openCreateGoal} onEditGoal={openEditGoal}
-          onDeleteGoal={deleteGoal} onToggleGoal={toggleGoalEnabled}
+          data={data}
+          todayCigarettes={todayCigarettes}
+          openGoalSwipeId={openGoalSwipeId}
+          setOpenGoalSwipeId={setOpenGoalSwipeId}
+          onCreateGoal={openCreateGoal}
+          onEditGoal={openEditGoal}
+          onDeleteGoal={deleteGoal}
+          onToggleGoal={toggleGoalEnabled}
         />
       )}
 
       {activeTab === 'settings' && (
         <SettingsTab
-          settingsPackPrice={settingsPackPrice} setSettingsPackPrice={setSettingsPackPrice}
-          settingsCigarettesPerPack={settingsCigarettesPerPack} setSettingsCigarettesPerPack={setSettingsCigarettesPerPack}
-          settingsDayStartHour={settingsDayStartHour} setSettingsDayStartHour={setSettingsDayStartHour}
+          settingsPackPrice={settingsPackPrice}
+          setSettingsPackPrice={setSettingsPackPrice}
+          settingsCigarettesPerPack={settingsCigarettesPerPack}
+          setSettingsCigarettesPerPack={setSettingsCigarettesPerPack}
+          settingsDayStartHour={settingsDayStartHour}
+          setSettingsDayStartHour={setSettingsDayStartHour}
           onSave={saveSettings}
         />
       )}
 
       {showGoalModal && (
         <GoalModal
-          editingGoalId={editingGoalId} goalForm={goalForm} setGoalForm={setGoalForm}
-          onSave={saveGoal} onDelete={deleteGoal}
-          onClose={() => { setShowGoalModal(false); setEditingGoalId(null) }}
+          editingGoalId={editingGoalId}
+          goalForm={goalForm}
+          setGoalForm={setGoalForm}
+          onSave={saveGoal}
+          onDelete={deleteGoal}
+          onClose={() => {
+            setShowGoalModal(false)
+            setEditingGoalId(null)
+          }}
         />
       )}
 
       {showAddModal && (
         <AddCigaretteModal
-          addDate={addDate} setAddDate={setAddDate}
-          addHours={addHours} setAddHours={setAddHours}
-          addMinutes={addMinutes} setAddMinutes={setAddMinutes}
-          onSave={saveManualCigarette} onClose={closeAddModal}
+          addDate={addDate}
+          setAddDate={setAddDate}
+          addHours={addHours}
+          setAddHours={setAddHours}
+          addMinutes={addMinutes}
+          setAddMinutes={setAddMinutes}
+          onSave={saveManualCigarette}
+          onClose={closeAddModal}
         />
       )}
 
       {editingIndex !== null && (
         <EditCigaretteModal
-          editHours={editHours} setEditHours={setEditHours}
-          editMinutes={editMinutes} setEditMinutes={setEditMinutes}
-          onSave={saveEditedTime} onDelete={deleteCigarette} onClose={cancelEditing}
+          editHours={editHours}
+          setEditHours={setEditHours}
+          editMinutes={editMinutes}
+          setEditMinutes={setEditMinutes}
+          onSave={saveEditedTime}
+          onDelete={deleteCigarette}
+          onClose={cancelEditing}
         />
       )}
 
       <nav className="nav">
-        <button className={`nav-item ${activeTab === 'home' ? 'active' : ''}`} onClick={() => setActiveTab('home')}>
+        <button
+          className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
+          onClick={() => setActiveTab('home')}
+        >
           <span className="nav-icon">🏠</span>Главная
         </button>
-        <button className={`nav-item ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => setActiveTab('stats')}>
+        <button
+          className={`nav-item ${activeTab === 'stats' ? 'active' : ''}`}
+          onClick={() => setActiveTab('stats')}
+        >
           <span className="nav-icon">📊</span>Статистика
         </button>
-        <button className={`nav-item ${activeTab === 'goals' ? 'active' : ''}`} onClick={() => setActiveTab('goals')}>
+        <button
+          className={`nav-item ${activeTab === 'goals' ? 'active' : ''}`}
+          onClick={() => setActiveTab('goals')}
+        >
           <span className="nav-icon">🎯</span>Цели
         </button>
-        <button className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
+        <button
+          className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('settings')}
+        >
           <span className="nav-icon">⚙️</span>Настройки
         </button>
       </nav>

@@ -5,7 +5,7 @@ export const defaultData = {
   packPrice: 0,
   cigarettesPerPack: 20,
   goals: [],
-  dayStartHour: 0
+  dayStartHour: 0,
 }
 
 let dayStartOffsetMs = 0
@@ -77,12 +77,14 @@ export function getDayOfWeek(dateKey) {
 export function getHourlyCounts(cigarettes, dayKey) {
   const hours = Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0 }))
   cigarettes
-    .filter(t => getDateKey(t) === dayKey)
-    .forEach(t => { hours[new Date(t).getHours()].count++ })
+    .filter((t) => getDateKey(t) === dayKey)
+    .forEach((t) => {
+      hours[new Date(t).getHours()].count++
+    })
   return hours
 }
 
 export function getTodaySmokedCount(cigarettes) {
   const todayKey = getDateKey(Date.now())
-  return cigarettes.filter(t => getDateKey(t) === todayKey).length
+  return cigarettes.filter((t) => getDateKey(t) === todayKey).length
 }

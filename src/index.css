@@ -86,7 +86,9 @@ body {
   border: none;
   border-radius: 16px;
   cursor: pointer;
-  transition: transform 0.1s, box-shadow 0.2s;
+  transition:
+    transform 0.1s,
+    box-shadow 0.2s;
   box-shadow: 0 4px 14px rgba(239, 68, 68, 0.4);
 }
 
@@ -391,7 +393,9 @@ body {
 
 .history-item.clickable {
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  transition:
+    background 0.2s,
+    transform 0.1s;
 }
 
 .history-item.clickable:hover {
@@ -515,7 +519,9 @@ body {
   border: none;
   border-radius: 12px;
   cursor: pointer;
-  transition: transform 0.1s, opacity 0.2s;
+  transition:
+    transform 0.1s,
+    opacity 0.2s;
 }
 
 .modal-btn:active {
@@ -799,7 +805,9 @@ body {
 .daily-progress-fill {
   height: 100%;
   border-radius: 6px;
-  transition: width 0.3s ease, background 0.3s;
+  transition:
+    width 0.3s ease,
+    background 0.3s;
 }
 
 .limit-exceeded {
@@ -816,8 +824,13 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 /* Селектор типа сокращения */
@@ -1139,8 +1152,14 @@ body {
 }
 
 @keyframes toast-in {
-  from { opacity: 0; transform: translate(-50%, 20px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
+  from {
+    opacity: 0;
+    transform: translate(-50%, 20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
 }
 
 /* Матрица «цели x недели» */
@@ -1269,9 +1288,15 @@ body {
   flex-shrink: 0;
 }
 
-.goals-stats-percent.high { color: var(--primary); }
-.goals-stats-percent.mid { color: #f59e0b; }
-.goals-stats-percent.low { color: var(--danger); }
+.goals-stats-percent.high {
+  color: var(--primary);
+}
+.goals-stats-percent.mid {
+  color: #f59e0b;
+}
+.goals-stats-percent.low {
+  color: var(--danger);
+}
 
 /* Статусы целей в дне */
 .day-goals-list {
@@ -1291,9 +1316,15 @@ body {
   font-size: 13px;
 }
 
-.day-goal-item.success { color: var(--primary); }
-.day-goal-item.fail { color: var(--danger); }
-.day-goal-item.pending { color: var(--text-secondary); }
+.day-goal-item.success {
+  color: var(--primary);
+}
+.day-goal-item.fail {
+  color: var(--danger);
+}
+.day-goal-item.pending {
+  color: var(--text-secondary);
+}
 
 /* Переключатель периода в статистике */
 .period-switcher {
@@ -1315,7 +1346,9 @@ body {
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 
 .period-switcher-btn.active {
@@ -1394,7 +1427,6 @@ body {
 .show-all-log-btn:active {
   opacity: 0.7;
 }
-
 
 .all-log-group {
   display: flex;
