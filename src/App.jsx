@@ -106,48 +106,6 @@ function getCurrentProgramDay(startDate) {
   return Math.max(1, diffDays + 1)
 }
 
-function getLinearDailyLimit(config, dayNumber) {
-  const { currentSmokes, targetSmokes, totalDays } = config
-  const reduction = ((currentSmokes - targetSmokes) / totalDays) * (dayNumber - 1)
-  return Math.max(targetSmokes, Math.round(currentSmokes - reduction))
-}
-
-function getSteppedDailyLimit(config, dayNumber) {
-  const { currentSmokes, targetSmokes, totalDays } = config
-  const totalReduction = currentSmokes - targetSmokes
-  if (totalReduction <= 0) return currentSmokes
-  const daysPerStep = totalDays / totalReduction
-  const stepsCompleted = Math.floor((dayNumber - 1) / daysPerStep)
-  return Math.max(targetSmokes, currentSmokes - stepsCompleted)
-}
-
-function getDailyLimit(config, dayNumber) {
-  if (!config) return 0
-  if (config.reductionType === 'linear') {
-    return getLinearDailyLimit(config, dayNumber)
-  }
-  return getSteppedDailyLimit(config, dayNumber)
-}
-
-function getIntervalMs(config, dailyLimit) {
-  if (!config || dailyLimit <= 0) return Infinity
-  const intervalMinutes = (config.wakeHours * 60) / dailyLimit
-  return intervalMinutes * 60 * 1000
-}
-
-function getNextAllowedTime(cigarettes, config, dayNumber) {
-  const todayKey = getDateKey(Date.now())
-  const todayCigarettes = cigarettes.filter(t => getDateKey(t) === todayKey)
-
-  if (todayCigarettes.length === 0) {
-    return Date.now()
-  }
-
-  const dailyLimit = getDailyLimit(config, dayNumber)
-  const lastCigarette = Math.max(...todayCigarettes)
-  const interval = getIntervalMs(config, dailyLimit)
-  return lastCigarette + interval
-}
 
 function getTodaySmokedCount(cigarettes) {
   const todayKey = getDateKey(Date.now())
@@ -404,13 +362,6 @@ const [activeTab, setActiveTab] = useState('home')
 
   // Состояния для режима сокращения
   const [showReductionSetupModal, setShowReductionSetupModal] = useState(false)
-  const [setupProgramType, setSetupProgramType] = useState('linear')
-  const [setupCurrentSmokes, setSetupCurrentSmokes] = useState('')
-  const [setupTargetSmokes, setSetupTargetSmokes] = useState('')
-  const [setupTotalDays, setSetupTotalDays] = useState('')
-  const [setupWakeHours, setSetupWakeHours] = useState('16')
-  const [setupReductionType, setSetupReductionType] = useState('linear')
-  const [countdownTime, setCountdownTime] = useState(0)
 
   // Состояния для целей
   const [showGoalModal, setShowGoalModal] = useState(false)
@@ -439,20 +390,6 @@ const [activeTab, setActiveTab] = useState('home')
   useEffect(() => () => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
   }, [])
-
-  const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (data.reductionConfig?.isConfigured && data.reductionConfig.type !== 'goals') {
-        const currentDay = getCurrentProgramDay(data.reductionConfig.startDate)
-        const nextAllowed = getNextAllowedTime(data.cigarettes, data.reductionConfig, currentDay)
-        const remaining = nextAllowed - Date.now()
-        setCountdownTime(Math.max(0, remaining))
-      }
-    }, 1000)
-    return () => clearInterval(interval)
-  }, [lastCigarette, data.reductionConfig, data.cigarettes])
 
   // Тик для пересчёта статусов целей
   const [, setGoalsTick] = useState(0)
@@ -581,36 +518,12 @@ const [activeTab, setActiveTab] = useState('home')
   }, [settingsPackPrice, settingsCigarettesPerPack, settingsDayStartHour])
 
   const saveReductionConfig = useCallback(() => {
-    const config = setupProgramType === 'linear'
-      ? {
-          type: 'linear',
-          currentSmokes: parseInt(setupCurrentSmokes, 10) || 20,
-          targetSmokes: parseInt(setupTargetSmokes, 10) || 0,
-          totalDays: parseInt(setupTotalDays, 10) || 30,
-          wakeHours: parseInt(setupWakeHours, 10) || 16,
-          reductionType: setupReductionType,
-          startDate: Date.now(),
-          isConfigured: true
-        }
-      : {
-          type: 'goals',
-          startDate: Date.now(),
-          isConfigured: true
-        }
-
     setData(prev => ({
       ...prev,
-      reductionConfig: config
+      reductionConfig: { type: 'goals', startDate: Date.now(), isConfigured: true }
     }))
-
     setShowReductionSetupModal(false)
-    setSetupProgramType('linear')
-    setSetupCurrentSmokes('')
-    setSetupTargetSmokes('')
-    setSetupTotalDays('')
-    setSetupWakeHours('16')
-    setSetupReductionType('linear')
-  }, [setupProgramType, setupCurrentSmokes, setupTargetSmokes, setupTotalDays, setupWakeHours, setupReductionType])
+  }, [])
 
   const resetReductionConfig = useCallback(() => {
     setData(prev => ({
@@ -619,29 +532,7 @@ const [activeTab, setActiveTab] = useState('home')
     }))
   }, [])
 
-  const switchProgramType = useCallback((newType) => {
-    setData(prev => {
-      const base = newType === 'linear'
-        ? {
-            type: 'linear',
-            currentSmokes: prev.reductionConfig?.currentSmokes || 20,
-            targetSmokes: prev.reductionConfig?.targetSmokes ?? 0,
-            totalDays: prev.reductionConfig?.totalDays || 30,
-            wakeHours: prev.reductionConfig?.wakeHours || 16,
-            reductionType: prev.reductionConfig?.reductionType || 'linear',
-            startDate: Date.now(),
-            isConfigured: true
-          }
-        : {
-            type: 'goals',
-            startDate: Date.now(),
-            isConfigured: true
-          }
-      return { ...prev, reductionConfig: base }
-    })
-  }, [])
-
-  const openCreateGoal = useCallback(() => {
+const openCreateGoal = useCallback(() => {
     setEditingGoalId(null)
     setGoalForm({
       type: 'silence',
@@ -776,15 +667,7 @@ const periodDays = (() => {
     .filter(t => getDateKey(t) === todayKey)
     .sort((a, b) => b - a)
 
-  // Значения для режима сокращения
-  const currentProgramDay = data.reductionConfig?.isConfigured
-    ? getCurrentProgramDay(data.reductionConfig.startDate)
-    : 1
-  const dailyLimit = data.reductionConfig?.isConfigured
-    ? getDailyLimit(data.reductionConfig, currentProgramDay)
-    : 0
   const todaySmoked = getTodaySmokedCount(data.cigarettes)
-  const canSmoke = countdownTime === 0
 
   return (
     <div className="app">
@@ -807,7 +690,7 @@ const periodDays = (() => {
                     Настроить программу
                   </button>
                 </div>
-              ) : data.reductionConfig.type === 'goals' ? (
+              ) : (
                 <>
                   {/* Карточка активных целей */}
                   {(() => {
@@ -849,95 +732,6 @@ const periodDays = (() => {
                       </div>
                     )
                   })()}
-
-                  <div className="action-row">
-                    <button className="smoke-btn" onClick={addCigarette}>
-                      Выкурил сигарету
-                    </button>
-                    <button className="add-manual-btn" onClick={openAddModal}>
-                      + Добавить вручную
-                    </button>
-                  </div>
-
-                  <div className="stats-card">
-                    <div className="stats-header">
-                      <h2>Сегодня</h2>
-                      <span className="today-count">{todaySmoked} шт</span>
-                    </div>
-
-                    <div className={"history-list"}>
-                      {todayCigarettes.length > 0 ? (
-                        (showAllLog ? todayCigarettes : todayCigarettes.slice(0, 5)).map((time, i) => {
-                          const originalIndex = data.cigarettes.indexOf(time)
-                          return (
-                            <div
-                              key={i}
-                              className="history-item clickable"
-                              onClick={() => startEditing(time, originalIndex)}
-                            >
-                              <span className="history-time">
-                                {new Date(time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                              <span className="history-ago">{formatTimeAgo(time)}</span>
-                            </div>
-                          )
-                        })
-                      ) : (
-                        <div className="empty-state">Пока нет записей за сегодня</div>
-                      )}
-                      {todayCigarettes.length > 5 && (
-                        <button className="show-all-log-btn" onClick={() => setShowAllLog(v => !v)}>
-                          {showAllLog ? 'Свернуть' : 'Показать всё'}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </>
-              ) : (
-                <>
-                  {/* Индикатор дня программы */}
-                  <div className="program-progress">
-                    <span className="program-day">
-                      День {currentProgramDay} из {data.reductionConfig.totalDays}
-                    </span>
-                    <div className="program-progress-bar">
-                      <div
-                        className="program-progress-fill"
-                        style={{ width: `${Math.min(100, (currentProgramDay / data.reductionConfig.totalDays) * 100)}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Таймер обратного отсчёта */}
-                  <div className="timer-card">
-                    <div className="timer-label">
-                      {canSmoke ? 'Можно курить!' : 'До следующей сигареты'}
-                    </div>
-                    <div className={`timer-value ${canSmoke ? 'can-smoke' : ''}`}>
-                      {canSmoke ? '00:00:00' : formatTime(countdownTime)}
-                    </div>
-                  </div>
-
-                  {/* Прогресс дня */}
-                  <div className="daily-progress">
-                    <div className="daily-progress-text">
-                      Выкурено <strong>{todaySmoked}</strong> из <strong>{dailyLimit}</strong> разрешённых
-                    </div>
-                    <div className="daily-progress-bar">
-                      <div
-                        className="daily-progress-fill"
-                        style={{
-                          width: `${Math.min(100, (todaySmoked / dailyLimit) * 100)}%`,
-                          background: todaySmoked > dailyLimit ? 'var(--danger)' : 'var(--primary)'
-                        }}
-                      />
-                    </div>
-                    {todaySmoked > dailyLimit && (
-                      <div className="limit-exceeded">
-                        Превышен лимит на {todaySmoked - dailyLimit}
-                      </div>
-                    )}
-                  </div>
 
                   <div className="action-row">
                     <button className="smoke-btn" onClick={addCigarette}>
@@ -1455,108 +1249,9 @@ const periodDays = (() => {
           <div className="modal modal-large" onClick={e => e.stopPropagation()}>
             <h3>Настройка программы</h3>
 
-            <div className="settings-input-wrapper">
-              <label className="input-label">Тип программы</label>
-              <div className="reduction-type-selector">
-                <button
-                  className={`type-btn ${setupProgramType === 'linear' ? 'active' : ''}`}
-                  onClick={() => setSetupProgramType('linear')}
-                >
-                  Линейный
-                </button>
-                <button
-                  className={`type-btn ${setupProgramType === 'goals' ? 'active' : ''}`}
-                  onClick={() => setSetupProgramType('goals')}
-                >
-                  По целям
-                </button>
-              </div>
-              <p className="type-hint">
-                {setupProgramType === 'linear'
-                  ? 'Единый дневной лимит и таймер между сигаретами'
-                  : 'Гибкие цели: окно тишины, лимиты, интервалы'}
-              </p>
-            </div>
-
-            {setupProgramType === 'linear' ? (
-              <>
-                <div className="settings-input-wrapper">
-                  <label className="input-label">Сигарет в день сейчас</label>
-                  <input
-                    type="number"
-                    className="settings-input"
-                    value={setupCurrentSmokes}
-                    onChange={e => setSetupCurrentSmokes(e.target.value)}
-                    placeholder="20"
-                    min="1"
-                  />
-                </div>
-
-                <div className="settings-input-wrapper">
-                  <label className="input-label">Цель (сигарет в день)</label>
-                  <input
-                    type="number"
-                    className="settings-input"
-                    value={setupTargetSmokes}
-                    onChange={e => setSetupTargetSmokes(e.target.value)}
-                    placeholder="5"
-                    min="0"
-                  />
-                </div>
-
-                <div className="settings-input-wrapper">
-                  <label className="input-label">Период сокращения (дней)</label>
-                  <input
-                    type="number"
-                    className="settings-input"
-                    value={setupTotalDays}
-                    onChange={e => setSetupTotalDays(e.target.value)}
-                    placeholder="30"
-                    min="1"
-                  />
-                </div>
-
-                <div className="settings-input-wrapper">
-                  <label className="input-label">Часы бодрствования</label>
-                  <input
-                    type="number"
-                    className="settings-input"
-                    value={setupWakeHours}
-                    onChange={e => setSetupWakeHours(e.target.value)}
-                    placeholder="16"
-                    min="1"
-                    max="24"
-                  />
-                </div>
-
-                <div className="settings-input-wrapper">
-                  <label className="input-label">Тип сокращения</label>
-                  <div className="reduction-type-selector">
-                    <button
-                      className={`type-btn ${setupReductionType === 'linear' ? 'active' : ''}`}
-                      onClick={() => setSetupReductionType('linear')}
-                    >
-                      Линейное
-                    </button>
-                    <button
-                      className={`type-btn ${setupReductionType === 'stepped' ? 'active' : ''}`}
-                      onClick={() => setSetupReductionType('stepped')}
-                    >
-                      Ступенчатое
-                    </button>
-                  </div>
-                  <p className="type-hint">
-                    {setupReductionType === 'linear'
-                      ? 'Плавное уменьшение каждый день'
-                      : 'Уменьшение на 1 сигарету каждые N дней'}
-                  </p>
-                </div>
-              </>
-            ) : (
-              <p className="type-hint" style={{ marginBottom: 16 }}>
-                После запуска программы перейдите во вкладку «Цели», чтобы добавить первую цель.
-              </p>
-            )}
+            <p className="type-hint" style={{ marginBottom: 16 }}>
+              После запуска программы перейдите во вкладку «Цели», чтобы добавить первую цель.
+            </p>
 
             <div className="modal-buttons">
               <button
@@ -1625,38 +1320,10 @@ const periodDays = (() => {
             <div className="settings-section" style={{ marginTop: 20 }}>
               <h3 className="settings-section-title">Программа сокращения</h3>
               <p style={{ marginBottom: 16, color: 'var(--text-secondary)', fontSize: 14 }}>
-                {data.reductionConfig.type === 'goals'
-                  ? `Тип: По целям, день ${getCurrentProgramDay(data.reductionConfig.startDate)}`
-                  : `Тип: Линейный, день ${currentProgramDay} из ${data.reductionConfig.totalDays}`}
+                {`День ${getCurrentProgramDay(data.reductionConfig.startDate)}`}
               </p>
 
-              <label className="input-label">Сменить тип программы</label>
-              <div className="reduction-type-selector">
-                <button
-                  className={`type-btn ${data.reductionConfig.type !== 'goals' ? 'active' : ''}`}
-                  onClick={() => {
-                    if (data.reductionConfig.type !== 'goals') return
-                    if (confirm('Сменить на линейный? Прогресс программы (день N) будет сброшен.')) {
-                      switchProgramType('linear')
-                    }
-                  }}
-                >
-                  Линейный
-                </button>
-                <button
-                  className={`type-btn ${data.reductionConfig.type === 'goals' ? 'active' : ''}`}
-                  onClick={() => {
-                    if (data.reductionConfig.type === 'goals') return
-                    if (confirm('Сменить на цели? Прогресс программы (день N) будет сброшен.')) {
-                      switchProgramType('goals')
-                    }
-                  }}
-                >
-                  По целям
-                </button>
-              </div>
-
-              <button className="modal-btn delete" style={{ marginTop: 16 }} onClick={resetReductionConfig}>
+              <button className="modal-btn delete" onClick={resetReductionConfig}>
                 Сбросить программу
               </button>
             </div>
