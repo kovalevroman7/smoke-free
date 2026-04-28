@@ -1387,12 +1387,6 @@ body {
   opacity: 0.7;
 }
 
-/* Полный лог: скролл при раскрытии */
-.history-list--expanded {
-  max-height: 380px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-}
 
 .all-log-group {
   display: flex;

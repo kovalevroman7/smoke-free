@@ -832,7 +832,7 @@ function App() {
                   <span className="today-count">{todayCount} шт</span>
                 </div>
 
-                <div className={`history-list${showAllLog ? ' history-list--expanded' : ''}`}>
+                <div className={"history-list"}>
                   {todayCigarettes.length > 0 ? (
                     (showAllLog ? todayCigarettes : todayCigarettes.slice(0, 5)).map((time, i) => {
                       const originalIndex = data.cigarettes.indexOf(time)
@@ -935,7 +935,7 @@ function App() {
                       <span className="today-count">{todaySmoked} шт</span>
                     </div>
 
-                    <div className={`history-list${showAllLog ? ' history-list--expanded' : ''}`}>
+                    <div className={"history-list"}>
                       {todayCigarettes.length > 0 ? (
                         (showAllLog ? todayCigarettes : todayCigarettes.slice(0, 5)).map((time, i) => {
                           const originalIndex = data.cigarettes.indexOf(time)
@@ -1024,7 +1024,7 @@ function App() {
                       <span className="today-count">{todaySmoked} шт</span>
                     </div>
 
-                    <div className={`history-list${showAllLog ? ' history-list--expanded' : ''}`}>
+                    <div className={"history-list"}>
                       {todayCigarettes.length > 0 ? (
                         (showAllLog ? todayCigarettes : todayCigarettes.slice(0, 5)).map((time, i) => {
                           const originalIndex = data.cigarettes.indexOf(time)
