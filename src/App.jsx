@@ -8,7 +8,6 @@ const defaultData = {
   cigarettes: [],
   packPrice: 0,
   cigarettesPerPack: 20,
-  mode: 'observation',
   reductionConfig: null,
   goals: [],
   dayStartHour: 0
@@ -388,8 +387,7 @@ function SwipeableItem({ children, onEdit, onDelete, isOpen, onToggle }) {
 
 function App() {
   const [data, setData] = useState(loadData)
-  const [timeSinceLast, setTimeSinceLast] = useState(0)
-  const [activeTab, setActiveTab] = useState('home')
+const [activeTab, setActiveTab] = useState('home')
   const [statsPeriod, setStatsPeriod] = useState('week')
   const [selectedDay, setSelectedDay] = useState(null)
   const [editingIndex, setEditingIndex] = useState(null)
@@ -405,7 +403,6 @@ function App() {
   const [openSwipeIndex, setOpenSwipeIndex] = useState(null)
 
   // Состояния для режима сокращения
-  const [mode, setMode] = useState(data.mode || 'observation')
   const [showReductionSetupModal, setShowReductionSetupModal] = useState(false)
   const [setupProgramType, setSetupProgramType] = useState('linear')
   const [setupCurrentSmokes, setSetupCurrentSmokes] = useState('')
@@ -447,11 +444,7 @@ function App() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (mode === 'observation') {
-        if (lastCigarette) {
-          setTimeSinceLast(Date.now() - lastCigarette)
-        }
-      } else if (mode === 'reduction' && data.reductionConfig?.isConfigured && data.reductionConfig.type !== 'goals') {
+      if (data.reductionConfig?.isConfigured && data.reductionConfig.type !== 'goals') {
         const currentDay = getCurrentProgramDay(data.reductionConfig.startDate)
         const nextAllowed = getNextAllowedTime(data.cigarettes, data.reductionConfig, currentDay)
         const remaining = nextAllowed - Date.now()
@@ -459,7 +452,7 @@ function App() {
       }
     }, 1000)
     return () => clearInterval(interval)
-  }, [lastCigarette, mode, data.reductionConfig, data.cigarettes])
+  }, [lastCigarette, data.reductionConfig, data.cigarettes])
 
   // Тик для пересчёта статусов целей
   const [, setGoalsTick] = useState(0)
@@ -724,9 +717,7 @@ function App() {
   }, [])
 
   const todayKey = getDateKey(Date.now())
-  const todayCount = data.cigarettes.filter(t => getDateKey(t) === todayKey).length
-
-  const periodDays = (() => {
+const periodDays = (() => {
     if (statsPeriod === 'week') {
       const today = new Date()
       const dayOfWeek = (today.getDay() + 6) % 7
@@ -795,13 +786,6 @@ function App() {
   const todaySmoked = getTodaySmokedCount(data.cigarettes)
   const canSmoke = countdownTime === 0
 
-  const getTimerClass = () => {
-    const hours = timeSinceLast / 3600000
-    if (hours < 1) return 'danger'
-    if (hours < 2) return 'warning'
-    return ''
-  }
-
   return (
     <div className="app">
       <header className="header">
@@ -811,83 +795,7 @@ function App() {
 
       {activeTab === 'home' && (
         <>
-          {/* Селектор режима */}
-          <div className="mode-selector">
-            <select
-              className="mode-select"
-              value={mode}
-              onChange={(e) => {
-                const newMode = e.target.value
-                setMode(newMode)
-                setData(prev => ({ ...prev, mode: newMode }))
-              }}
-            >
-              <option value="observation">Наблюдение</option>
-              <option value="reduction">Сокращение</option>
-            </select>
-          </div>
-
-          {/* Режим "Наблюдение" */}
-          {mode === 'observation' && (
-            <>
-              <div className="timer-card">
-                <div className="timer-label">
-                  {lastCigarette ? 'Времени без сигареты' : 'Начните отслеживание'}
-                </div>
-                <div className={`timer-value ${getTimerClass()}`}>
-                  {lastCigarette ? formatTime(timeSinceLast) : '—:—:—'}
-                </div>
-              </div>
-
-              <div className="action-row">
-                <button className="smoke-btn" onClick={addCigarette}>
-                  Выкурил сигарету
-                </button>
-                <button className="add-manual-btn" onClick={openAddModal}>
-                  + Добавить вручную
-                </button>
-              </div>
-
-              <div className="stats-card">
-                <div className="stats-header">
-                  <h2>Сегодня</h2>
-                  <span className="today-count">{todayCount} шт</span>
-                </div>
-
-                <div className={"history-list"}>
-                  {todayCigarettes.length > 0 ? (
-                    (showAllLog ? todayCigarettes : todayCigarettes.slice(0, 5)).map((time, i) => {
-                      const originalIndex = data.cigarettes.indexOf(time)
-                      return (
-                        <div
-                          key={i}
-                          className="history-item clickable"
-                          onClick={() => startEditing(time, originalIndex)}
-                        >
-                          <span className="history-time">
-                            {new Date(time).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                          <span className="history-ago">{formatTimeAgo(time)}</span>
-                        </div>
-                      )
-                    })
-                  ) : (
-                    <div className="empty-state">Пока нет записей за сегодня</div>
-                  )}
-                  {todayCigarettes.length > 5 && (
-                    <button className="show-all-log-btn" onClick={() => setShowAllLog(v => !v)}>
-                      {showAllLog ? 'Свернуть' : 'Показать всё'}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Режим "Сокращение" */}
-          {mode === 'reduction' && (
-            <>
-              {!data.reductionConfig?.isConfigured ? (
+          {!data.reductionConfig?.isConfigured ? (
                 <div className="reduction-setup-card">
                   <div className="setup-icon">📉</div>
                   <h2>Программа сокращения</h2>
@@ -1075,8 +983,6 @@ function App() {
                   </div>
                 </>
               )}
-            </>
-          )}
         </>
       )}
 
