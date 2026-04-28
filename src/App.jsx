@@ -700,10 +700,7 @@ const periodDays = (() => {
                       <div className="goals-card">
                         <div className="goals-card-header">
                           <h2>Активные цели</h2>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span className="goals-card-count">{enabled.length}</span>
-                            <button className="goals-card-add-btn" onClick={openCreateGoal}>+</button>
-                          </div>
+                          <button className="goals-card-add-btn" onClick={openCreateGoal}>+</button>
                         </div>
                         <div className="goal-widgets">
                           {enabled.map(goal => {
