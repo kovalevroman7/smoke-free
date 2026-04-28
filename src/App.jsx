@@ -666,6 +666,24 @@ const periodDays = (() => {
       {activeTab === 'home' && (
         <>
           <>
+                  <div className="timer-card">
+                    <div className="timer-label">
+                      {data.cigarettes.length > 0 ? 'Времени без сигареты' : 'Начните отслеживание'}
+                    </div>
+                    <div className="timer-value">
+                      {data.cigarettes.length > 0 ? formatTime(timeSinceLast) : '—:—:—'}
+                    </div>
+                  </div>
+
+                  <div className="action-row">
+                    <button className="smoke-btn" onClick={addCigarette}>
+                      Выкурил сигарету
+                    </button>
+                    <button className="add-manual-btn" onClick={openAddModal}>
+                      + Добавить вручную
+                    </button>
+                  </div>
+
                   {/* Карточка активных целей */}
                   {(() => {
                     const goals = data.goals || []
@@ -706,24 +724,6 @@ const periodDays = (() => {
                       </div>
                     )
                   })()}
-
-                  <div className="timer-card">
-                    <div className="timer-label">
-                      {data.cigarettes.length > 0 ? 'Времени без сигареты' : 'Начните отслеживание'}
-                    </div>
-                    <div className="timer-value">
-                      {data.cigarettes.length > 0 ? formatTime(timeSinceLast) : '—:—:—'}
-                    </div>
-                  </div>
-
-                  <div className="action-row">
-                    <button className="smoke-btn" onClick={addCigarette}>
-                      Выкурил сигарету
-                    </button>
-                    <button className="add-manual-btn" onClick={openAddModal}>
-                      + Добавить вручную
-                    </button>
-                  </div>
 
                   <div className="stats-card">
                     <div className="stats-header">
