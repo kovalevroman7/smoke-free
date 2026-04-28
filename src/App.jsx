@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import GoalModal from './GoalModal'
+import { GOAL_TYPES } from './goalTypes'
 
 const STORAGE_KEY = 'smoke-free-data'
 
@@ -154,12 +156,6 @@ function getTodaySmokedCount(cigarettes) {
 }
 
 // === Цели ===
-const GOAL_TYPES = {
-  silence: { name: 'Окно тишины', icon: '🌙', description: 'Не курить в указанный временной промежуток' },
-  limit_before: { name: 'Лимит до времени', icon: '⏰', description: 'Не более N сигарет до указанного времени' },
-  morning_interval: { name: 'Утренний интервал', icon: '🌅', description: 'Минимальный промежуток между первыми N сигаретами дня' },
-  evening_interval: { name: 'Вечерний интервал', icon: '🌆', description: 'Минимальный промежуток между сигаретами после указанного времени' }
-}
 
 function generateGoalId() {
   return `goal_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
@@ -1426,150 +1422,14 @@ function App() {
       )}
 
       {showGoalModal && (
-        <div className="modal-overlay" onClick={() => setShowGoalModal(false)}>
-          <div className="modal modal-large" onClick={e => e.stopPropagation()}>
-            <h3>{editingGoalId ? 'Редактировать цель' : 'Новая цель'}</h3>
-
-            {!editingGoalId && (
-              <div className="settings-input-wrapper">
-                <label className="input-label">Тип цели</label>
-                <div className="goal-type-grid">
-                  {Object.entries(GOAL_TYPES).map(([key, meta]) => (
-                    <button
-                      key={key}
-                      className={`goal-type-btn ${goalForm.type === key ? 'active' : ''}`}
-                      onClick={() => setGoalForm(f => ({ ...f, type: key }))}
-                    >
-                      <span className="goal-type-icon">{meta.icon}</span>
-                      <span className="goal-type-name">{meta.name}</span>
-                    </button>
-                  ))}
-                </div>
-                <p className="type-hint">{GOAL_TYPES[goalForm.type]?.description}</p>
-              </div>
-            )}
-
-            {goalForm.type === 'silence' && (
-              <>
-                <div className="settings-input-wrapper">
-                  <label className="input-label">Не курить с</label>
-                  <input
-                    type="time"
-                    className="settings-input"
-                    value={goalForm.from}
-                    onChange={e => setGoalForm(f => ({ ...f, from: e.target.value }))}
-                  />
-                </div>
-                <div className="settings-input-wrapper">
-                  <label className="input-label">До</label>
-                  <input
-                    type="time"
-                    className="settings-input"
-                    value={goalForm.to}
-                    onChange={e => setGoalForm(f => ({ ...f, to: e.target.value }))}
-                  />
-                </div>
-              </>
-            )}
-
-            {goalForm.type === 'limit_before' && (
-              <>
-                <div className="settings-input-wrapper">
-                  <label className="input-label">Максимум сигарет</label>
-                  <input
-                    type="number"
-                    className="settings-input"
-                    value={goalForm.maxCount}
-                    onChange={e => setGoalForm(f => ({ ...f, maxCount: e.target.value }))}
-                    min="0"
-                  />
-                </div>
-                <div className="settings-input-wrapper">
-                  <label className="input-label">До времени</label>
-                  <input
-                    type="time"
-                    className="settings-input"
-                    value={goalForm.beforeTime}
-                    onChange={e => setGoalForm(f => ({ ...f, beforeTime: e.target.value }))}
-                  />
-                </div>
-              </>
-            )}
-
-            {goalForm.type === 'morning_interval' && (
-              <>
-                <div className="settings-input-wrapper">
-                  <label className="input-label">Количество первых сигарет</label>
-                  <input
-                    type="number"
-                    className="settings-input"
-                    value={goalForm.count}
-                    onChange={e => setGoalForm(f => ({ ...f, count: e.target.value }))}
-                    min="2"
-                  />
-                </div>
-                <div className="settings-input-wrapper">
-                  <label className="input-label">Минимальный интервал (мин)</label>
-                  <input
-                    type="number"
-                    className="settings-input"
-                    value={goalForm.intervalMinutes}
-                    onChange={e => setGoalForm(f => ({ ...f, intervalMinutes: e.target.value }))}
-                    min="1"
-                  />
-                </div>
-              </>
-            )}
-
-            {goalForm.type === 'evening_interval' && (
-              <>
-                <div className="settings-input-wrapper">
-                  <label className="input-label">Активна после</label>
-                  <input
-                    type="time"
-                    className="settings-input"
-                    value={goalForm.afterTime}
-                    onChange={e => setGoalForm(f => ({ ...f, afterTime: e.target.value }))}
-                  />
-                </div>
-                <div className="settings-input-wrapper">
-                  <label className="input-label">Минимальный интервал (мин)</label>
-                  <input
-                    type="number"
-                    className="settings-input"
-                    value={goalForm.intervalMinutes}
-                    onChange={e => setGoalForm(f => ({ ...f, intervalMinutes: e.target.value }))}
-                    min="1"
-                  />
-                </div>
-              </>
-            )}
-
-            <div className="modal-buttons">
-              <button className="modal-btn cancel" onClick={() => setShowGoalModal(false)}>
-                Отмена
-              </button>
-              <button className="modal-btn save" onClick={saveGoal}>
-                {editingGoalId ? 'Сохранить' : 'Создать'}
-              </button>
-            </div>
-
-            {editingGoalId && (
-              <button
-                className="modal-btn delete"
-                onClick={() => {
-                  if (confirm('Удалить эту цель? Действие необратимо.')) {
-                    deleteGoal(editingGoalId)
-                    setShowGoalModal(false)
-                    setEditingGoalId(null)
-                  }
-                }}
-              >
-                Удалить цель
-              </button>
-            )}
-          </div>
-        </div>
+        <GoalModal
+          editingGoalId={editingGoalId}
+          goalForm={goalForm}
+          setGoalForm={setGoalForm}
+          onSave={saveGoal}
+          onDelete={deleteGoal}
+          onClose={() => { setShowGoalModal(false); setEditingGoalId(null) }}
+        />
       )}
 
       {showAddModal && (
