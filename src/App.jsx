@@ -707,15 +707,6 @@ const periodDays = (() => {
                     )
                   })()}
 
-                  <div className="action-row">
-                    <button className="smoke-btn" onClick={addCigarette}>
-                      Выкурил сигарету
-                    </button>
-                    <button className="add-manual-btn" onClick={openAddModal}>
-                      + Добавить вручную
-                    </button>
-                  </div>
-
                   <div className="timer-card">
                     <div className="timer-label">
                       {data.cigarettes.length > 0 ? 'Времени без сигареты' : 'Начните отслеживание'}
@@ -723,6 +714,15 @@ const periodDays = (() => {
                     <div className="timer-value">
                       {data.cigarettes.length > 0 ? formatTime(timeSinceLast) : '—:—:—'}
                     </div>
+                  </div>
+
+                  <div className="action-row">
+                    <button className="smoke-btn" onClick={addCigarette}>
+                      Выкурил сигарету
+                    </button>
+                    <button className="add-manual-btn" onClick={openAddModal}>
+                      + Добавить вручную
+                    </button>
                   </div>
 
                   <div className="stats-card">
