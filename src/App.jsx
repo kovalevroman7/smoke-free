@@ -8,7 +8,6 @@ const defaultData = {
   cigarettes: [],
   packPrice: 0,
   cigarettesPerPack: 20,
-  reductionConfig: null,
   goals: [],
   dayStartHour: 0
 }
@@ -24,10 +23,7 @@ function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     const parsed = raw ? { ...defaultData, ...JSON.parse(raw) } : defaultData
-    if ((!parsed.goals || parsed.goals.length === 0) && parsed.reductionConfig?.goals?.length) {
-      parsed.goals = parsed.reductionConfig.goals
-    }
-    setDayStartHour(parsed.dayStartHour)
+setDayStartHour(parsed.dayStartHour)
     return parsed
   } catch {
     setDayStartHour(defaultData.dayStartHour)
@@ -360,9 +356,6 @@ const [activeTab, setActiveTab] = useState('home')
   const [settingsDayStartHour, setSettingsDayStartHour] = useState((data.dayStartHour ?? 0).toString())
   const [openSwipeIndex, setOpenSwipeIndex] = useState(null)
 
-  // Состояния для режима сокращения
-  const [showReductionSetupModal, setShowReductionSetupModal] = useState(false)
-
   // Состояния для целей
   const [showGoalModal, setShowGoalModal] = useState(false)
   const [editingGoalId, setEditingGoalId] = useState(null)
@@ -517,13 +510,6 @@ const [activeTab, setActiveTab] = useState('home')
     }))
   }, [settingsPackPrice, settingsCigarettesPerPack, settingsDayStartHour])
 
-  const saveReductionConfig = useCallback(() => {
-    setData(prev => ({
-      ...prev,
-      reductionConfig: { type: 'goals', startDate: Date.now(), isConfigured: true }
-    }))
-    setShowReductionSetupModal(false)
-  }, [])
 
 const openCreateGoal = useCallback(() => {
     setEditingGoalId(null)
@@ -671,20 +657,7 @@ const periodDays = (() => {
 
       {activeTab === 'home' && (
         <>
-          {!data.reductionConfig?.isConfigured ? (
-                <div className="reduction-setup-card">
-                  <div className="setup-icon">📉</div>
-                  <h2>Программа сокращения</h2>
-                  <p>Настройте план постепенного снижения количества сигарет</p>
-                  <button
-                    className="setup-btn"
-                    onClick={() => setShowReductionSetupModal(true)}
-                  >
-                    Настроить программу
-                  </button>
-                </div>
-              ) : (
-                <>
+          <>
                   {/* Карточка активных целей */}
                   {(() => {
                     const goals = data.goals || []
@@ -768,8 +741,7 @@ const periodDays = (() => {
                       )}
                     </div>
                   </div>
-                </>
-              )}
+          </>
         </>
       )}
 
@@ -1236,32 +1208,7 @@ const periodDays = (() => {
         </div>
       )}
 
-      {/* Модалка настройки программы сокращения */}
-      {showReductionSetupModal && (
-        <div className="modal-overlay" onClick={() => setShowReductionSetupModal(false)}>
-          <div className="modal modal-large" onClick={e => e.stopPropagation()}>
-            <h3>Настройка программы</h3>
-
-            <p className="type-hint" style={{ marginBottom: 16 }}>
-              После запуска программы перейдите во вкладку «Цели», чтобы добавить первую цель.
-            </p>
-
-            <div className="modal-buttons">
-              <button
-                className="modal-btn cancel"
-                onClick={() => setShowReductionSetupModal(false)}
-              >
-                Отмена
-              </button>
-              <button className="modal-btn save" onClick={saveReductionConfig}>
-                Начать
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'settings' && (
+{activeTab === 'settings' && (
         <div className="stats-card">
           <h2 style={{ marginBottom: 20 }}>Настройки</h2>
 
