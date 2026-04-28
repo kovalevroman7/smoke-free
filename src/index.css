@@ -1368,3 +1368,46 @@ body {
   background: transparent;
   pointer-events: none;
 }
+
+/* Кнопка "Показать всё" / "Свернуть" в логе сигарет */
+.show-all-log-btn {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: var(--primary);
+  cursor: pointer;
+  text-align: center;
+}
+
+.show-all-log-btn:active {
+  opacity: 0.7;
+}
+
+/* Полный лог: скролл при раскрытии */
+.history-list--expanded {
+  max-height: 380px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.all-log-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.all-log-date {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
