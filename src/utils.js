@@ -6,6 +6,12 @@ export const defaultData = {
   cigarettesPerPack: 20,
   goals: [],
   dayStartHour: 0,
+  notifications: {
+    enabled: false,
+    dailyReminder: false,
+    dailyReminderTime: '20:00',
+    goalAlerts: false,
+  },
 }
 
 let dayStartOffsetMs = 0

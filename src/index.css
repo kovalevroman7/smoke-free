@@ -632,6 +632,31 @@ body {
   transform: scale(0.98);
 }
 
+.notif-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.notif-row:last-child {
+  border-bottom: none;
+}
+
+.notif-row-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.notif-row-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
 .swipeable-container {
   position: relative;
   overflow: hidden;

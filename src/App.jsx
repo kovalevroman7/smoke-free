@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useToast } from './hooks/useToast.js'
+import { useNotifications, sendNotification } from './hooks/useNotifications.js'
 import GoalModal from './GoalModal'
 import HomeTab from './HomeTab.jsx'
 import StatsTab from './StatsTab.jsx'
@@ -49,6 +50,22 @@ export default function App() {
   const { toast, showToast } = useToast()
   const [timeSinceLast, setTimeSinceLast] = useState(0)
 
+  const notifications = data.notifications || {
+    enabled: false,
+    dailyReminder: false,
+    dailyReminderTime: '20:00',
+    goalAlerts: false,
+  }
+
+  useNotifications(notifications)
+
+  const updateNotifications = useCallback((updates) => {
+    setData((prev) => ({
+      ...prev,
+      notifications: { ...(prev.notifications || {}), ...updates },
+    }))
+  }, [])
+
   useEffect(() => {
     const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
     if (!lastCigarette) return
@@ -81,6 +98,12 @@ export default function App() {
         if (violated.length > 0) {
           const names = violated.map((g) => GOAL_TYPES[g.type]?.name || g.type).join(', ')
           setTimeout(() => showToast(`Нарушает цель: ${names}`), 0)
+          if (prev.notifications?.goalAlerts) {
+            setTimeout(
+              () => sendNotification('Smoke Free — нарушение цели', `Нарушена цель: ${names}`),
+              0
+            )
+          }
         }
       }
       return { ...prev, cigarettes: [...prev.cigarettes, now] }
@@ -301,6 +324,8 @@ export default function App() {
           settingsDayStartHour={settingsDayStartHour}
           setSettingsDayStartHour={setSettingsDayStartHour}
           onSave={saveSettings}
+          notifications={notifications}
+          onUpdateNotifications={updateNotifications}
         />
       )}
 
