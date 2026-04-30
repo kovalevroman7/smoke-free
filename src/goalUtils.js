@@ -170,6 +170,8 @@ export function evaluateGoal(goal, dayCigarettes, now) {
 }
 
 export function checkGoalViolationOnAdd(goal, dayCigarettes, addTime) {
+  const alreadyFailing = evaluateGoal(goal, dayCigarettes, addTime).status === 'fail'
+  if (alreadyFailing) return false
   const newCigs = [...dayCigarettes, addTime].sort((a, b) => a - b)
   return evaluateGoal(goal, newCigs, addTime).status === 'fail'
 }
