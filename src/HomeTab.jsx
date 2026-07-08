@@ -21,12 +21,18 @@ export default function HomeTab({
 
   return (
     <>
-      <div className="timer-card">
-        <div className="timer-label">
-          {data.cigarettes.length > 0 ? 'Времени без сигареты' : 'Начните отслеживание'}
+      <div className="timer-row">
+        <div className="timer-card">
+          <div className="timer-label">
+            {data.cigarettes.length > 0 ? 'Времени без сигареты' : 'Начните отслеживание'}
+          </div>
+          <div className="timer-value">
+            {data.cigarettes.length > 0 ? formatTime(timeSinceLast) : '—:—:—'}
+          </div>
         </div>
-        <div className="timer-value">
-          {data.cigarettes.length > 0 ? formatTime(timeSinceLast) : '—:—:—'}
+        <div className="count-card">
+          <div className="count-label">сегодня</div>
+          <div className="count-value">{todaySmoked}</div>
         </div>
       </div>
 
