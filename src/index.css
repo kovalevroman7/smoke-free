@@ -337,8 +337,8 @@ body {
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: space-around;
-  padding: 12px 0;
-  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  padding: 8px 0;
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
   z-index: 100;
 }
 
@@ -352,15 +352,35 @@ body {
   color: var(--text-secondary);
   font-size: 12px;
   cursor: pointer;
-  padding: 8px 16px;
-}
-
-.nav-item.active {
-  color: var(--primary);
+  padding: 6px 12px;
 }
 
 .nav-icon {
-  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 30px;
+  border-radius: 16px;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.nav-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.nav-item.active .nav-icon {
+  color: var(--text);
+}
+
+.nav-item.active {
+  color: var(--text);
+  font-weight: 400;
+  background: rgba(0, 0, 0, 0.06);
+  border-radius: 16px;
 }
 
 .day-detail {
