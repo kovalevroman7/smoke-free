@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { formatTime, formatTimeAgo } from './utils.js'
 import { evaluateGoal } from './goalUtils.js'
 import { GOAL_TYPES } from './goalTypes.js'
@@ -18,6 +19,7 @@ export default function HomeTab({
 }) {
   const goals = data.goals || []
   const enabledGoals = goals.filter((g) => g.enabled)
+  const [fabOpen, setFabOpen] = useState(false)
 
   return (
     <>
@@ -34,15 +36,6 @@ export default function HomeTab({
           <div className="count-label">сегодня</div>
           <div className="count-value">{todaySmoked}</div>
         </div>
-      </div>
-
-      <div className="action-row">
-        <button className="smoke-btn" onClick={onAddCigarette}>
-          Выкурил сигарету
-        </button>
-        <button className="add-manual-btn" onClick={onOpenAddModal}>
-          + Добавить вручную
-        </button>
       </div>
 
       {enabledGoals.length === 0 ? (
@@ -115,6 +108,39 @@ export default function HomeTab({
           )}
         </div>
       </div>
+
+      {fabOpen && (
+        <>
+          <div className="fab-backdrop" onClick={() => setFabOpen(false)} />
+          <div className="fab-menu">
+            <button
+              className="fab-menu-item"
+              onClick={() => {
+                onAddCigarette()
+                setFabOpen(false)
+              }}
+            >
+              Выкурил сигарету
+            </button>
+            <button
+              className="fab-menu-item"
+              onClick={() => {
+                onOpenAddModal()
+                setFabOpen(false)
+              }}
+            >
+              Добавить вручную
+            </button>
+          </div>
+        </>
+      )}
+      <button
+        className={`fab ${fabOpen ? 'open' : ''}`}
+        aria-label="Добавить"
+        onClick={() => setFabOpen((v) => !v)}
+      >
+        +
+      </button>
     </>
   )
 }
