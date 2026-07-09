@@ -13,13 +13,13 @@ export default function HomeTab({
   setShowAllLog,
   onAddCigarette,
   onOpenAddModal,
-  onOpenCreateGoal,
   onStartEditing,
   onSetActiveTab,
 }) {
   const goals = data.goals || []
   const enabledGoals = goals.filter((g) => g.enabled)
   const [fabOpen, setFabOpen] = useState(false)
+  const [goalsCollapsed, setGoalsCollapsed] = useState(false)
 
   return (
     <>
@@ -49,27 +49,42 @@ export default function HomeTab({
         </div>
       ) : (
         <div className="goals-card">
-          <div className="goals-card-header">
+          <button
+            className="goals-card-header goals-card-toggle"
+            onClick={() => setGoalsCollapsed((v) => !v)}
+            aria-expanded={!goalsCollapsed}
+          >
             <h2>Активные цели</h2>
-            <button className="goals-card-add-btn" onClick={onOpenCreateGoal}>
-              +
-            </button>
-          </div>
-          <div className="goal-widgets">
-            {enabledGoals.map((goal) => {
-              const result = evaluateGoal(goal, todayCigarettes, Date.now())
-              const meta = GOAL_TYPES[goal.type]
-              return (
-                <div key={goal.id} className={`goal-widget goal-status-${result.status}`}>
-                  <div className="goal-widget-icon">{meta?.icon}</div>
-                  <div className="goal-widget-body">
-                    <div className="goal-widget-label">{result.label}</div>
-                    <div className="goal-widget-hint">{result.hint}</div>
+            <span className={`goals-card-chevron ${goalsCollapsed ? 'collapsed' : ''}`}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </span>
+          </button>
+          {!goalsCollapsed && (
+            <div className="goal-widgets">
+              {enabledGoals.map((goal) => {
+                const result = evaluateGoal(goal, todayCigarettes, Date.now())
+                const meta = GOAL_TYPES[goal.type]
+                return (
+                  <div key={goal.id} className={`goal-widget goal-status-${result.status}`}>
+                    <div className="goal-widget-icon">{meta?.icon}</div>
+                    <div className="goal-widget-body">
+                      <div className="goal-widget-label">{result.label}</div>
+                      <div className="goal-widget-hint">{result.hint}</div>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 

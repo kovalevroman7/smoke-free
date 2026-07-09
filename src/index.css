@@ -946,12 +946,8 @@ body {
 /* === Цели === */
 
 .goals-card {
-  background: var(--card);
-  border-radius: 16px;
-  padding: 16px;
   margin-top: 16px;
   margin-bottom: 16px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .goals-card-header {
@@ -961,25 +957,34 @@ body {
   margin-bottom: 12px;
 }
 
-.goals-card-header h2 {
+.goals-card-toggle {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 4px 0;
+  cursor: pointer;
+}
+
+.goals-card-toggle h2 {
   font-size: 16px;
   color: var(--text-secondary);
 }
 
-.goals-card-add-btn {
-  background: none;
-  color: var(--primary);
-  border: none;
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
-  font-size: 24px;
-  line-height: 1;
-  cursor: pointer;
+.goals-card-chevron {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: -8px;
+  color: var(--text-secondary);
+  transition: transform 0.25s ease;
+}
+
+.goals-card-chevron svg {
+  width: 20px;
+  height: 20px;
+}
+
+.goals-card-chevron.collapsed {
+  transform: rotate(180deg);
 }
 
 .goal-widgets {
@@ -993,9 +998,10 @@ body {
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: var(--bg);
+  background: var(--card);
   border-radius: 12px;
   border-left: 4px solid var(--text-secondary);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 .goal-widget-icon {
@@ -1022,7 +1028,7 @@ body {
 
 .goal-widget.goal-status-success {
   border-left-color: var(--primary);
-  background: rgba(16, 185, 129, 0.08);
+  background: linear-gradient(rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.08)), var(--card);
 }
 
 .goal-widget.goal-status-active {
@@ -1035,7 +1041,7 @@ body {
 
 .goal-widget.goal-status-fail {
   border-left-color: var(--danger);
-  background: rgba(239, 68, 68, 0.08);
+  background: linear-gradient(rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.08)), var(--card);
 }
 
 /* Список целей во вкладке */

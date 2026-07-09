@@ -259,7 +259,6 @@ export default function App() {
           setShowAllLog={setShowAllLog}
           onAddCigarette={addCigarette}
           onOpenAddModal={openAddModal}
-          onOpenCreateGoal={openCreateGoal}
           onStartEditing={startEditing}
           onSetActiveTab={setActiveTab}
         />
