@@ -16,6 +16,8 @@ export default function HomeTab({
   onStartEditing,
   onSetActiveTab,
 }) {
+  // Блок «Сегодня» временно скрыт (код сохранён).
+  const showTodayBlock = false
   const goals = data.goals || []
   const enabledGoals = goals.filter((g) => g.enabled)
   const [fabOpen, setFabOpen] = useState(false)
@@ -88,41 +90,43 @@ export default function HomeTab({
         </div>
       )}
 
-      <div className="stats-card">
-        <div className="stats-header">
-          <h2>Сегодня</h2>
-          <span className="today-count">{todaySmoked} шт</span>
+      {showTodayBlock && (
+        <div className="stats-card">
+          <div className="stats-header">
+            <h2>Сегодня</h2>
+            <span className="today-count">{todaySmoked} шт</span>
+          </div>
+          <div className="history-list">
+            {todayCigarettes.length > 0 ? (
+              (showAllLog ? todayCigarettes : todayCigarettes.slice(0, 5)).map((time, i) => {
+                const originalIndex = data.cigarettes.indexOf(time)
+                return (
+                  <div
+                    key={i}
+                    className="history-item clickable"
+                    onClick={() => onStartEditing(time, originalIndex)}
+                  >
+                    <span className="history-time">
+                      {new Date(time).toLocaleTimeString('ru-RU', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    <span className="history-ago">{formatTimeAgo(time)}</span>
+                  </div>
+                )
+              })
+            ) : (
+              <div className="empty-state">Пока нет записей за сегодня</div>
+            )}
+            {todayCigarettes.length > 5 && (
+              <button className="show-all-log-btn" onClick={() => setShowAllLog((v) => !v)}>
+                {showAllLog ? 'Свернуть' : 'Показать всё'}
+              </button>
+            )}
+          </div>
         </div>
-        <div className="history-list">
-          {todayCigarettes.length > 0 ? (
-            (showAllLog ? todayCigarettes : todayCigarettes.slice(0, 5)).map((time, i) => {
-              const originalIndex = data.cigarettes.indexOf(time)
-              return (
-                <div
-                  key={i}
-                  className="history-item clickable"
-                  onClick={() => onStartEditing(time, originalIndex)}
-                >
-                  <span className="history-time">
-                    {new Date(time).toLocaleTimeString('ru-RU', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </span>
-                  <span className="history-ago">{formatTimeAgo(time)}</span>
-                </div>
-              )
-            })
-          ) : (
-            <div className="empty-state">Пока нет записей за сегодня</div>
-          )}
-          {todayCigarettes.length > 5 && (
-            <button className="show-all-log-btn" onClick={() => setShowAllLog((v) => !v)}>
-              {showAllLog ? 'Свернуть' : 'Показать всё'}
-            </button>
-          )}
-        </div>
-      </div>
+      )}
 
       {fabOpen && (
         <>
