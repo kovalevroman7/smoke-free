@@ -1,7 +1,40 @@
 import { useState } from 'react'
 import { formatTime, formatTimeAgo } from './utils.js'
 import { evaluateGoal } from './goalUtils.js'
-import { GOAL_TYPES } from './goalTypes.js'
+
+/** Иконка статуса цели: галочка (успех), часы (в процессе), крестик (нарушено). */
+function GoalStatusIcon({ status }) {
+  const common = {
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 2.4,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+  }
+  if (status === 'fail') {
+    return (
+      <svg {...common}>
+        <path d="M18 6 6 18" />
+        <path d="m6 6 12 12" />
+      </svg>
+    )
+  }
+  if (status === 'pending') {
+    return (
+      <svg {...common}>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 2" />
+      </svg>
+    )
+  }
+  // success / active
+  return (
+    <svg {...common}>
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  )
+}
 
 /** Главная вкладка: таймер без сигареты, кнопки действий, активные цели, лог за сегодня. */
 export default function HomeTab({
@@ -74,10 +107,11 @@ export default function HomeTab({
             <div className="goal-widgets">
               {enabledGoals.map((goal) => {
                 const result = evaluateGoal(goal, todayCigarettes, Date.now())
-                const meta = GOAL_TYPES[goal.type]
                 return (
                   <div key={goal.id} className={`goal-widget goal-status-${result.status}`}>
-                    <div className="goal-widget-icon">{meta?.icon}</div>
+                    <div className="goal-widget-icon">
+                      <GoalStatusIcon status={result.status} />
+                    </div>
                     <div className="goal-widget-body">
                       <div className="goal-widget-label">{result.label}</div>
                       <div className="goal-widget-hint">{result.hint}</div>

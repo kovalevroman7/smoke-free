@@ -1011,17 +1011,28 @@ select {
 .goal-widget {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: var(--card);
-  border-radius: 12px;
-  border-left: 4px solid var(--text-secondary);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  /* Цвета фона/иконки/текста задаются через переменные состояния ниже */
+  background: var(--goal-bg, #eef0f2);
 }
 
 .goal-widget-icon {
-  font-size: 22px;
   flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--goal-badge, rgba(0, 0, 0, 0.05));
+  color: var(--goal-accent, var(--text-secondary));
+}
+
+.goal-widget-icon svg {
+  width: 22px;
+  height: 22px;
 }
 
 .goal-widget-body {
@@ -1030,33 +1041,35 @@ select {
 }
 
 .goal-widget-label {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--text);
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 .goal-widget-hint {
-  font-size: 12px;
-  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--goal-accent, var(--text-secondary));
 }
 
-.goal-widget.goal-status-success {
-  border-left-color: var(--primary);
-  background: linear-gradient(rgba(16, 185, 129, 0.08), rgba(16, 185, 129, 0.08)), var(--card);
-}
-
+.goal-widget.goal-status-success,
 .goal-widget.goal-status-active {
-  border-left-color: var(--primary);
+  --goal-bg: rgba(16, 185, 129, 0.1);
+  --goal-badge: rgba(16, 185, 129, 0.18);
+  --goal-accent: var(--primary-dark);
 }
 
 .goal-widget.goal-status-pending {
-  border-left-color: #f59e0b;
+  --goal-bg: rgba(245, 158, 11, 0.12);
+  --goal-badge: rgba(245, 158, 11, 0.2);
+  --goal-accent: #b45309;
 }
 
 .goal-widget.goal-status-fail {
-  border-left-color: var(--danger);
-  background: linear-gradient(rgba(239, 68, 68, 0.08), rgba(239, 68, 68, 0.08)), var(--card);
+  --goal-bg: rgba(239, 68, 68, 0.1);
+  --goal-badge: rgba(239, 68, 68, 0.18);
+  --goal-accent: #dc2626;
 }
 
 /* Список целей во вкладке */
