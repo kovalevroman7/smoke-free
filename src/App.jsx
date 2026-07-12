@@ -43,6 +43,7 @@ export default function App() {
     count: '3',
     intervalMinutes: '30',
     afterTime: '20:00',
+    title: '',
   })
   const [openGoalSwipeId, setOpenGoalSwipeId] = useState(null)
   const [showAllLog, setShowAllLog] = useState(false)
@@ -174,6 +175,7 @@ export default function App() {
       count: '3',
       intervalMinutes: '30',
       afterTime: '20:00',
+      title: '',
     })
     setShowGoalModal(true)
   }, [])
@@ -189,6 +191,7 @@ export default function App() {
       count: goal.params.count?.toString() || '3',
       intervalMinutes: goal.params.intervalMinutes?.toString() || '30',
       afterTime: goal.params.afterTime || '20:00',
+      title: goal.params.title || '',
     })
     setShowGoalModal(true)
     setOpenGoalSwipeId(null)
@@ -209,6 +212,7 @@ export default function App() {
         afterTime: goalForm.afterTime,
         intervalMinutes: parseInt(goalForm.intervalMinutes, 10) || 30,
       }
+    else if (goalForm.type === 'custom') params = { title: goalForm.title.trim() }
     setData((prev) => {
       const goals = prev.goals || []
       const nextGoals = editingGoalId
@@ -221,6 +225,7 @@ export default function App() {
               enabled: true,
               params,
               createdAt: Date.now(),
+              ...(goalForm.type === 'custom' ? { completedDates: [] } : {}),
             },
           ]
       return { ...prev, goals: nextGoals }
@@ -240,6 +245,28 @@ export default function App() {
       goals: (prev.goals || []).map((g) => (g.id === goalId ? { ...g, enabled: !g.enabled } : g)),
     }))
   }, [])
+
+  const toggleGoalCompletion = useCallback(
+    (goalId) => {
+      const todayKey = getDateKey(Date.now())
+      let markedDone = false
+      setData((prev) => ({
+        ...prev,
+        goals: (prev.goals || []).map((g) => {
+          if (g.id !== goalId || g.type !== 'custom') return g
+          const dates = g.completedDates || []
+          const done = dates.includes(todayKey)
+          markedDone = !done
+          return {
+            ...g,
+            completedDates: done ? dates.filter((d) => d !== todayKey) : [...dates, todayKey],
+          }
+        }),
+      }))
+      setTimeout(() => showToast(markedDone ? 'Цель отмечена' : 'Отметка снята'), 0)
+    },
+    [showToast]
+  )
 
   const todayKey = getDateKey(Date.now())
   const todayCigarettes = data.cigarettes
@@ -261,6 +288,7 @@ export default function App() {
           onOpenAddModal={openAddModal}
           onStartEditing={startEditing}
           onSetActiveTab={setActiveTab}
+          onToggleGoalCompletion={toggleGoalCompletion}
         />
       )}
 

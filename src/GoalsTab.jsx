@@ -58,6 +58,13 @@ export default function GoalsTab({
                 <p>После 20:00 — минимум 30 мин</p>
               </div>
             </div>
+            <div className="goal-example">
+              <span className="goal-example-icon">✅</span>
+              <div>
+                <strong>Своя цель</strong>
+                <p>Отмечайте выполнение вручную</p>
+              </div>
+            </div>
           </div>
           <button className="setup-btn" style={{ marginTop: 16 }} onClick={onCreateGoal}>
             Создать первую цель

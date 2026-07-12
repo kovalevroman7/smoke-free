@@ -32,6 +32,20 @@ export default function GoalModal({
           </div>
         )}
 
+        {goalForm.type === 'custom' && (
+          <div className="settings-input-wrapper">
+            <label className="input-label">Название цели</label>
+            <input
+              type="text"
+              className="settings-input"
+              placeholder="Например: Прогулка вместо перекура"
+              value={goalForm.title}
+              maxLength={60}
+              onChange={(e) => setGoalForm((f) => ({ ...f, title: e.target.value }))}
+            />
+          </div>
+        )}
+
         {goalForm.type === 'silence' && (
           <>
             <div className="settings-input-wrapper">
@@ -132,7 +146,11 @@ export default function GoalModal({
           <button className="modal-btn cancel" onClick={onClose}>
             Отмена
           </button>
-          <button className="modal-btn save" onClick={onSave}>
+          <button
+            className="modal-btn save"
+            onClick={onSave}
+            disabled={goalForm.type === 'custom' && !goalForm.title.trim()}
+          >
             {editingGoalId ? 'Сохранить' : 'Создать'}
           </button>
         </div>

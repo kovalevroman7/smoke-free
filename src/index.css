@@ -626,6 +626,11 @@ select {
   color: white;
 }
 
+.modal-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .modal-btn.delete {
   width: 100%;
   margin-top: 12px;
@@ -1016,6 +1021,19 @@ select {
   border-radius: 18px;
   /* Цвета фона/иконки/текста задаются через переменные состояния ниже */
   background: var(--goal-bg, #eef0f2);
+}
+
+/* Кастомная цель: отметка выполнения долгим нажатием */
+.goal-widget-pressable {
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  transition: transform 0.1s ease;
+}
+
+.goal-widget-pressable:active {
+  transform: scale(0.98);
 }
 
 .goal-widget-icon {

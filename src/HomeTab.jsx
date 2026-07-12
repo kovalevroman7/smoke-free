@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { formatTime, formatTimeAgo } from './utils.js'
 import { evaluateGoal } from './goalUtils.js'
 
@@ -36,6 +36,39 @@ function GoalStatusIcon({ status }) {
   )
 }
 
+/** Карточка активной цели. Для кастомных целей поддерживает отметку выполнения долгим нажатием. */
+function GoalWidget({ goal, result, onLongPress }) {
+  const timerRef = useRef(null)
+  const isCustom = goal.type === 'custom'
+
+  const start = () => {
+    if (!isCustom) return
+    timerRef.current = setTimeout(() => onLongPress(goal.id), 500)
+  }
+  const cancel = () => {
+    clearTimeout(timerRef.current)
+  }
+
+  return (
+    <div
+      className={`goal-widget goal-status-${result.status}${isCustom ? ' goal-widget-pressable' : ''}`}
+      onPointerDown={start}
+      onPointerUp={cancel}
+      onPointerLeave={cancel}
+      onPointerCancel={cancel}
+      onContextMenu={isCustom ? (e) => e.preventDefault() : undefined}
+    >
+      <div className="goal-widget-icon">
+        <GoalStatusIcon status={result.status} />
+      </div>
+      <div className="goal-widget-body">
+        <div className="goal-widget-label">{result.label}</div>
+        <div className="goal-widget-hint">{result.hint}</div>
+      </div>
+    </div>
+  )
+}
+
 /** Главная вкладка: таймер без сигареты, кнопки действий, активные цели, лог за сегодня. */
 export default function HomeTab({
   data,
@@ -48,6 +81,7 @@ export default function HomeTab({
   onOpenAddModal,
   onStartEditing,
   onSetActiveTab,
+  onToggleGoalCompletion,
 }) {
   // Блок «Сегодня» временно скрыт (код сохранён).
   const showTodayBlock = false
@@ -108,15 +142,12 @@ export default function HomeTab({
               {enabledGoals.map((goal) => {
                 const result = evaluateGoal(goal, todayCigarettes, Date.now())
                 return (
-                  <div key={goal.id} className={`goal-widget goal-status-${result.status}`}>
-                    <div className="goal-widget-icon">
-                      <GoalStatusIcon status={result.status} />
-                    </div>
-                    <div className="goal-widget-body">
-                      <div className="goal-widget-label">{result.label}</div>
-                      <div className="goal-widget-hint">{result.hint}</div>
-                    </div>
-                  </div>
+                  <GoalWidget
+                    key={goal.id}
+                    goal={goal}
+                    result={result}
+                    onLongPress={onToggleGoalCompletion}
+                  />
                 )
               })}
             </div>
