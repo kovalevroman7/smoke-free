@@ -7,7 +7,7 @@ import GoalsTab from './GoalsTab.jsx'
 import SettingsTab from './SettingsTab.jsx'
 import AddCigaretteModal from './AddCigaretteModal.jsx'
 import EditCigaretteModal from './EditCigaretteModal.jsx'
-import { GOAL_TYPES } from './goalTypes.js'
+import { GOAL_TYPES, getGoalCategory } from './goalTypes.js'
 import { loadData, saveData, setDayStartHour, getDateKey, getTodaySmokedCount } from './utils.js'
 import { generateGoalId, checkGoalViolationOnAdd } from './goalUtils.js'
 
@@ -35,6 +35,7 @@ export default function App() {
   const [showGoalModal, setShowGoalModal] = useState(false)
   const [editingGoalId, setEditingGoalId] = useState(null)
   const [goalForm, setGoalForm] = useState({
+    category: 'rule',
     type: 'silence',
     from: '22:00',
     to: '08:00',
@@ -164,10 +165,11 @@ export default function App() {
     }))
   }, [settingsPackPrice, settingsCigarettesPerPack, settingsDayStartHour])
 
-  const openCreateGoal = useCallback(() => {
+  const openCreateGoal = useCallback((category = 'rule') => {
     setEditingGoalId(null)
     setGoalForm({
-      type: 'silence',
+      category,
+      type: category === 'promise' ? 'custom' : 'silence',
       from: '22:00',
       to: '08:00',
       beforeTime: '11:00',
@@ -183,6 +185,7 @@ export default function App() {
   const openEditGoal = useCallback((goal) => {
     setEditingGoalId(goal.id)
     setGoalForm({
+      category: getGoalCategory(goal),
       type: goal.type,
       from: goal.params.from || '22:00',
       to: goal.params.to || '08:00',
@@ -225,7 +228,7 @@ export default function App() {
               enabled: true,
               params,
               createdAt: Date.now(),
-              ...(goalForm.type === 'custom' ? { completedDates: [] } : {}),
+              ...(goalForm.category === 'promise' ? { completedDates: [] } : {}),
             },
           ]
       return { ...prev, goals: nextGoals }
@@ -253,7 +256,7 @@ export default function App() {
       setData((prev) => ({
         ...prev,
         goals: (prev.goals || []).map((g) => {
-          if (g.id !== goalId || g.type !== 'custom') return g
+          if (g.id !== goalId || getGoalCategory(g) !== 'promise') return g
           const dates = g.completedDates || []
           const done = dates.includes(todayKey)
           markedDone = !done
@@ -263,7 +266,7 @@ export default function App() {
           }
         }),
       }))
-      setTimeout(() => showToast(markedDone ? 'Цель отмечена' : 'Отметка снята'), 0)
+      setTimeout(() => showToast(markedDone ? 'Обещание выполнено' : 'Отметка снята'), 0)
     },
     [showToast]
   )

@@ -198,25 +198,38 @@ export function getGoalDayStatus(goal, dayCigarettes, dayKey) {
   return 'pending'
 }
 
-export function getGoalSuccessRate(goal, cigarettes, startTimestamp) {
-  const startKey = getDateKey(startTimestamp)
-  const endKey = getDateKey(Date.now())
-  const cursor = new Date(`${startKey}T00:00:00`)
-  const end = new Date(`${endKey}T00:00:00`)
-  let total = 0,
-    success = 0
-  while (cursor.getTime() <= end.getTime()) {
-    const dayKey = getDateKey(cursor.getTime())
-    const dayCigs = cigarettes.filter((c) => getDateKey(c) === dayKey)
-    const status = getGoalDayStatus(goal, dayCigs, dayKey)
-    if (status === 'success') {
-      total++
-      success++
-    } else if (status === 'fail') {
-      total++
-    }
-    cursor.setDate(cursor.getDate() + 1)
+/**
+ * Стрик по «Обещанию»: считает подряд идущие выполненные дни.
+ * current — текущая серия, живая пока обещание выполнено сегодня или вчера.
+ * best — самая длинная серия за всё время.
+ */
+export function getPromiseStreak(goal) {
+  const dayMs = 24 * 60 * 60 * 1000
+  const toTime = (key) => new Date(`${key}T00:00:00`).getTime()
+  const dates = [...new Set(goal.completedDates || [])].sort()
+  if (dates.length === 0) return { current: 0, best: 0 }
+
+  let best = 0
+  let run = 0
+  let prev = null
+  for (const key of dates) {
+    if (prev !== null && getDateKey(toTime(key) - dayMs) === prev) run++
+    else run = 1
+    if (run > best) best = run
+    prev = key
   }
-  if (total === 0) return null
-  return Math.round((success / total) * 100)
+
+  const set = new Set(dates)
+  const todayKey = getDateKey(Date.now())
+  const yesterdayKey = getDateKey(Date.now() - dayMs)
+  let current = 0
+  let cursorKey = set.has(todayKey) ? todayKey : set.has(yesterdayKey) ? yesterdayKey : null
+  if (cursorKey) {
+    let t = toTime(cursorKey)
+    while (set.has(getDateKey(t))) {
+      current++
+      t -= dayMs
+    }
+  }
+  return { current, best }
 }

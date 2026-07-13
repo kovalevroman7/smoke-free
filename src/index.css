@@ -1257,6 +1257,114 @@ select {
   text-align: center;
 }
 
+/* Переключатель категории цели в модалке (Правило / Обещание) */
+.goal-category-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.goal-category-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px 8px;
+  border: 2px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.goal-category-btn.active {
+  border-color: var(--primary);
+  background: rgba(16, 185, 129, 0.1);
+  color: var(--primary);
+}
+
+.goal-category-icon {
+  font-size: 18px;
+}
+
+/* Секции категорий во вкладке «Цели» */
+.goals-section {
+  margin-bottom: 20px;
+}
+
+.goals-section:last-child {
+  margin-bottom: 0;
+}
+
+.goals-section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.goals-section-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.goals-section-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.goals-section-hint {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Ведро в онбординге целей */
+.goal-onboarding-bucket {
+  text-align: left;
+  margin-bottom: 16px;
+}
+
+.goal-onboarding-bucket-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.goal-onboarding-bucket-title > span {
+  font-size: 22px;
+}
+
+.goal-onboarding-bucket-title strong {
+  font-size: 15px;
+}
+
+.goal-onboarding-bucket-title p {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* Бейдж стрика на виджете обещания */
+.goal-widget-streak {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--goal-accent, var(--text-secondary));
+}
+
+/* Стрик обещания в статистике */
+.goals-week-goal-streak {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 /* Toast */
 .toast {
   position: fixed;
