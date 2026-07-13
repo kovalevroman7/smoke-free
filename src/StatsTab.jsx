@@ -267,14 +267,12 @@ export default function StatsTab({
                     ))}
               </div>
               {promises.map((goal) => {
-                const meta = GOAL_TYPES[goal.type]
                 const goalStartKey = goal.createdAt ? getDateKey(goal.createdAt) : periodDays[0]
                 const done = new Set(goal.completedDates || [])
                 const { current, best } = getPromiseStreak(goal)
                 return (
                   <div key={goal.id} className="goals-week-goal">
                     <div className="goals-week-goal-header">
-                      <span className="goals-week-goal-icon">{meta?.icon}</span>
                       <span className="goals-week-goal-label">{getCompactGoalLabel(goal)}</span>
                       <span className="goals-week-goal-streak">
                         🔥 {current} · рекорд {best}
