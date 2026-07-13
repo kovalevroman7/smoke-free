@@ -1,11 +1,15 @@
 export const STORAGE_KEY = 'smoke-free-data'
 
+export const DEFAULT_TAGS = ['Стресс', 'После еды', 'Кофе']
+
 export const defaultData = {
   cigarettes: [],
   packPrice: 0,
   cigarettesPerPack: 20,
   goals: [],
   dayStartHour: 0,
+  customTags: [],
+  cigaretteTags: {},
 }
 
 let dayStartOffsetMs = 0

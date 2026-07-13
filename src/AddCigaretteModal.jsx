@@ -1,6 +1,7 @@
-import { getDateKey } from './utils.js'
+import { useState } from 'react'
+import { getDateKey, DEFAULT_TAGS } from './utils.js'
 
-/** Модалка ручного добавления записи о курении с выбором даты и времени. */
+/** Модалка ручного добавления записи о курении с выбором даты, времени и тэга. */
 export default function AddCigaretteModal({
   addDate,
   setAddDate,
@@ -8,9 +9,29 @@ export default function AddCigaretteModal({
   setAddHours,
   addMinutes,
   setAddMinutes,
+  customTags = [],
+  selectedTag,
+  setSelectedTag,
+  onAddCustomTag,
   onSave,
   onClose,
 }) {
+  const [addingTag, setAddingTag] = useState(false)
+  const [newTagName, setNewTagName] = useState('')
+
+  const tags = [...DEFAULT_TAGS, ...customTags]
+
+  const toggleTag = (tag) => {
+    setSelectedTag(selectedTag === tag ? '' : tag)
+  }
+
+  const confirmNewTag = () => {
+    const trimmed = newTagName.trim()
+    if (trimmed) onAddCustomTag(trimmed)
+    setNewTagName('')
+    setAddingTag(false)
+  }
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -55,6 +76,48 @@ export default function AddCigaretteModal({
               max="59"
               placeholder="00"
             />
+          </div>
+        </div>
+        <div className="tag-input-wrapper">
+          <label className="input-label">Тэг</label>
+          <div className="tag-chips">
+            {tags.map((tag) => (
+              <button
+                key={tag}
+                type="button"
+                className={`tag-chip ${selectedTag === tag ? 'active' : ''}`}
+                onClick={() => toggleTag(tag)}
+              >
+                {tag}
+              </button>
+            ))}
+            {addingTag ? (
+              <input
+                type="text"
+                className="tag-chip-input"
+                placeholder="Название"
+                value={newTagName}
+                maxLength={30}
+                autoFocus
+                onChange={(e) => setNewTagName(e.target.value)}
+                onBlur={confirmNewTag}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') confirmNewTag()
+                  if (e.key === 'Escape') {
+                    setNewTagName('')
+                    setAddingTag(false)
+                  }
+                }}
+              />
+            ) : (
+              <button
+                type="button"
+                className="tag-chip tag-chip-add"
+                onClick={() => setAddingTag(true)}
+              >
+                + Тэг
+              </button>
+            )}
           </div>
         </div>
         <div className="modal-buttons">

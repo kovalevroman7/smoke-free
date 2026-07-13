@@ -8,7 +8,14 @@ import SettingsTab from './SettingsTab.jsx'
 import AddCigaretteModal from './AddCigaretteModal.jsx'
 import EditCigaretteModal from './EditCigaretteModal.jsx'
 import { GOAL_TYPES, getGoalCategory } from './goalTypes.js'
-import { loadData, saveData, setDayStartHour, getDateKey, getTodaySmokedCount } from './utils.js'
+import {
+  loadData,
+  saveData,
+  setDayStartHour,
+  getDateKey,
+  getTodaySmokedCount,
+  DEFAULT_TAGS,
+} from './utils.js'
 import { generateGoalId, checkGoalViolationOnAdd } from './goalUtils.js'
 
 /** Корневой компонент: управляет состоянием, роутингом по вкладкам и модальными окнами. */
@@ -24,6 +31,7 @@ export default function App() {
   const [addDate, setAddDate] = useState('')
   const [addHours, setAddHours] = useState('')
   const [addMinutes, setAddMinutes] = useState('')
+  const [addTag, setAddTag] = useState('')
   const [settingsPackPrice, setSettingsPackPrice] = useState(data.packPrice?.toString() || '')
   const [settingsCigarettesPerPack, setSettingsCigarettesPerPack] = useState(
     data.cigarettesPerPack?.toString() || '20'
@@ -136,6 +144,7 @@ export default function App() {
     setAddDate(getDateKey(now.getTime()))
     setAddHours(now.getHours().toString().padStart(2, '0'))
     setAddMinutes(now.getMinutes().toString().padStart(2, '0'))
+    setAddTag('')
     setShowAddModal(true)
   }, [])
 
@@ -144,17 +153,31 @@ export default function App() {
     setAddDate('')
     setAddHours('')
     setAddMinutes('')
+    setAddTag('')
+  }, [])
+
+  const addCustomTag = useCallback((name) => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    setData((prev) => {
+      const existing = prev.customTags || []
+      if (existing.includes(trimmed) || DEFAULT_TAGS.includes(trimmed)) return prev
+      return { ...prev, customTags: [...existing, trimmed] }
+    })
+    setAddTag(trimmed)
   }, [])
 
   const saveManualCigarette = useCallback(() => {
     const date = new Date(addDate)
     date.setHours(parseInt(addHours, 10) || 0, parseInt(addMinutes, 10) || 0, 0, 0)
+    const time = date.getTime()
     setData((prev) => ({
       ...prev,
-      cigarettes: [...prev.cigarettes, date.getTime()].sort((a, b) => a - b),
+      cigarettes: [...prev.cigarettes, time].sort((a, b) => a - b),
+      ...(addTag ? { cigaretteTags: { ...(prev.cigaretteTags || {}), [time]: addTag } } : {}),
     }))
     closeAddModal()
-  }, [addDate, addHours, addMinutes, closeAddModal])
+  }, [addDate, addHours, addMinutes, addTag, closeAddModal])
 
   const saveSettings = useCallback(() => {
     setData((prev) => ({
@@ -356,6 +379,10 @@ export default function App() {
           setAddHours={setAddHours}
           addMinutes={addMinutes}
           setAddMinutes={setAddMinutes}
+          customTags={data.customTags || []}
+          selectedTag={addTag}
+          setSelectedTag={setAddTag}
+          onAddCustomTag={addCustomTag}
           onSave={saveManualCigarette}
           onClose={closeAddModal}
         />

@@ -304,8 +304,27 @@ select {
   border-radius: 12px;
 }
 
+.history-item-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
 .history-time {
   font-weight: 500;
+}
+
+.history-tag {
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--primary-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .history-ago {
@@ -592,6 +611,55 @@ select {
   font-size: 32px;
   font-weight: 600;
   color: var(--text);
+}
+
+/* Поле выбора тэга в модалке добавления записи */
+.tag-input-wrapper {
+  margin-bottom: 20px;
+}
+
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-chip {
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 2px solid transparent;
+  border-radius: 20px;
+  background: var(--bg);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tag-chip.active {
+  background: var(--primary);
+  color: #fff;
+}
+
+.tag-chip-add {
+  background: transparent;
+  border: 2px dashed var(--border);
+  color: var(--text-secondary);
+}
+
+.tag-chip-input {
+  width: 110px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  border: 2px solid var(--primary);
+  border-radius: 20px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.tag-chip-input:focus {
+  outline: none;
 }
 
 .modal-buttons {

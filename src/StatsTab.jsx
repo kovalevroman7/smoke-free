@@ -394,6 +394,7 @@ export default function StatsTab({
                 <div className="history-list">
                   {dayCigarettes.map((time, i) => {
                     const originalIndex = data.cigarettes.indexOf(time)
+                    const tag = (data.cigaretteTags || {})[time]
                     return (
                       <SwipeableItem
                         key={time}
@@ -406,12 +407,15 @@ export default function StatsTab({
                         onDelete={() => onDeleteByIndex(originalIndex)}
                       >
                         <div className="history-item">
-                          <span className="history-time">
-                            {new Date(time).toLocaleTimeString('ru-RU', {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })}
-                          </span>
+                          <div className="history-item-left">
+                            <span className="history-time">
+                              {new Date(time).toLocaleTimeString('ru-RU', {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                            {tag && <span className="history-tag">{tag}</span>}
+                          </div>
                           <span className="history-ago">#{dayCigarettes.length - i}</span>
                         </div>
                       </SwipeableItem>
