@@ -154,7 +154,7 @@ export default function HomeTab({
           </div>
           {lastCigarette && (
             <div className="timer-last">
-              <span className="timer-last-label">Последняя:</span>
+              <span className="timer-last-label">посл:</span>
               <span className="timer-last-time">
                 {new Date(lastCigarette).toLocaleTimeString('ru-RU', {
                   hour: '2-digit',
