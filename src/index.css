@@ -73,7 +73,7 @@ select {
   min-width: 0;
   background: var(--card);
   border-radius: 20px;
-  padding: 32px 24px;
+  padding: 20px 24px;
   text-align: center;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
@@ -113,10 +113,41 @@ select {
 }
 
 .timer-value {
-  font-size: 48px;
+  font-size: 40px;
   font-weight: 700;
   color: var(--primary);
   font-variant-numeric: tabular-nums;
+}
+
+.timer-last {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bg);
+  font-size: 14px;
+}
+
+.timer-last-label {
+  color: var(--text-secondary);
+}
+
+.timer-last-time {
+  font-weight: 600;
+}
+
+.timer-last-tag {
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--primary-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .timer-value.warning {

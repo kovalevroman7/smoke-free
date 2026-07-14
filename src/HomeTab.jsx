@@ -91,6 +91,8 @@ export default function HomeTab({
   const enabledGoals = goals.filter((g) => g.enabled)
   const enabledRules = enabledGoals.filter((g) => getGoalCategory(g) === 'rule')
   const enabledPromises = enabledGoals.filter((g) => getGoalCategory(g) === 'promise')
+  const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
+  const lastTag = lastCigarette ? (data.cigaretteTags || {})[lastCigarette] : undefined
   const [fabOpen, setFabOpen] = useState(false)
   const [rulesCollapsed, setRulesCollapsed] = useState(false)
   const [promisesCollapsed, setPromisesCollapsed] = useState(false)
@@ -150,6 +152,18 @@ export default function HomeTab({
           <div className="timer-value">
             {data.cigarettes.length > 0 ? formatTime(timeSinceLast) : '—:—:—'}
           </div>
+          {lastCigarette && (
+            <div className="timer-last">
+              <span className="timer-last-label">Последняя:</span>
+              <span className="timer-last-time">
+                {new Date(lastCigarette).toLocaleTimeString('ru-RU', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </span>
+              {lastTag && <span className="timer-last-tag">{lastTag}</span>}
+            </div>
+          )}
         </div>
         <div className="count-card">
           <div className="count-label">сегодня</div>
