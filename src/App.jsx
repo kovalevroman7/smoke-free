@@ -7,6 +7,7 @@ import GoalsTab from './GoalsTab.jsx'
 import SettingsTab from './SettingsTab.jsx'
 import AddCigaretteModal from './AddCigaretteModal.jsx'
 import EditCigaretteModal from './EditCigaretteModal.jsx'
+import QuickTagPanel from './QuickTagPanel.jsx'
 import { GOAL_TYPES, getGoalCategory } from './goalTypes.js'
 import {
   loadData,
@@ -55,7 +56,7 @@ export default function App() {
     title: '',
   })
   const [openGoalSwipeId, setOpenGoalSwipeId] = useState(null)
-  const [showAllLog, setShowAllLog] = useState(false)
+  const [quickTagTimestamp, setQuickTagTimestamp] = useState(null)
   const { toast, showToast } = useToast()
   const [timeSinceLast, setTimeSinceLast] = useState(0)
 
@@ -95,7 +96,59 @@ export default function App() {
       }
       return { ...prev, cigarettes: [...prev.cigarettes, now] }
     })
+    setQuickTagTimestamp(now)
   }, [showToast])
+
+  const selectQuickTag = useCallback(
+    (tag) => {
+      setData((prev) => {
+        const cigaretteTags = { ...(prev.cigaretteTags || {}) }
+        if (cigaretteTags[quickTagTimestamp] === tag) delete cigaretteTags[quickTagTimestamp]
+        else cigaretteTags[quickTagTimestamp] = tag
+        return { ...prev, cigaretteTags }
+      })
+      setQuickTagTimestamp(null)
+    },
+    [quickTagTimestamp]
+  )
+
+  const addQuickCustomTag = useCallback(
+    (name) => {
+      const trimmed = name.trim()
+      if (!trimmed) return
+      setData((prev) => {
+        const existing = prev.customTags || []
+        const customTags =
+          existing.includes(trimmed) || DEFAULT_TAGS.includes(trimmed)
+            ? existing
+            : [...existing, trimmed]
+        return {
+          ...prev,
+          customTags,
+          cigaretteTags: { ...(prev.cigaretteTags || {}), [quickTagTimestamp]: trimmed },
+        }
+      })
+      setQuickTagTimestamp(null)
+    },
+    [quickTagTimestamp]
+  )
+
+  const undoQuickCigarette = useCallback(() => {
+    setData((prev) => {
+      const cigarettes = [...prev.cigarettes]
+      const index = cigarettes.lastIndexOf(quickTagTimestamp)
+      if (index !== -1) cigarettes.splice(index, 1)
+      const cigaretteTags = { ...(prev.cigaretteTags || {}) }
+      delete cigaretteTags[quickTagTimestamp]
+      return { ...prev, cigarettes, cigaretteTags }
+    })
+    setQuickTagTimestamp(null)
+    showToast('Добавление отменено')
+  }, [quickTagTimestamp, showToast])
+
+  const closeQuickTag = useCallback(() => {
+    setQuickTagTimestamp(null)
+  }, [])
 
   const startEditing = useCallback((timestamp, index) => {
     const date = new Date(timestamp)
@@ -308,11 +361,8 @@ export default function App() {
           timeSinceLast={timeSinceLast}
           todayCigarettes={todayCigarettes}
           todaySmoked={todaySmoked}
-          showAllLog={showAllLog}
-          setShowAllLog={setShowAllLog}
           onAddCigarette={addCigarette}
           onOpenAddModal={openAddModal}
-          onStartEditing={startEditing}
           onSetActiveTab={setActiveTab}
           onToggleGoalCompletion={toggleGoalCompletion}
         />
@@ -397,6 +447,19 @@ export default function App() {
           onSave={saveEditedTime}
           onDelete={deleteCigarette}
           onClose={cancelEditing}
+        />
+      )}
+
+      {quickTagTimestamp !== null && (
+        <QuickTagPanel
+          key={quickTagTimestamp}
+          timestamp={quickTagTimestamp}
+          tags={[...DEFAULT_TAGS, ...(data.customTags || [])]}
+          selectedTag={(data.cigaretteTags || {})[quickTagTimestamp] || ''}
+          onSelectTag={selectQuickTag}
+          onAddCustomTag={addQuickCustomTag}
+          onUndo={undoQuickCigarette}
+          onClose={closeQuickTag}
         />
       )}
 

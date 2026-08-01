@@ -693,6 +693,169 @@ select {
   outline: none;
 }
 
+/* Быстрое тегирование после нажатия «Выкурил сигарету» */
+.quick-tag-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+  background: rgba(31, 41, 55, 0.42);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  animation: quick-tag-overlay-enter 0.18s ease-out;
+}
+
+.quick-tag-panel {
+  width: min(100%, 420px);
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  border: 0;
+  border-radius: 24px;
+  background: transparent;
+  color: #fff;
+  animation: quick-tag-panel-enter 0.22s ease-out;
+}
+
+.quick-tag-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.quick-tag-header > div {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.quick-tag-header strong {
+  font-size: 15px;
+}
+
+.quick-tag-header span {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.72);
+  font-variant-numeric: tabular-nums;
+}
+
+.quick-tag-close {
+  width: 28px;
+  height: 28px;
+  margin: -6px -6px 0 0;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.quick-tag-hint {
+  margin-bottom: 16px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 14px;
+}
+
+.quick-tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-height: min(50vh, 360px);
+  padding: 2px 2px 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.quick-tag-chips::-webkit-scrollbar {
+  width: 4px;
+}
+
+.quick-tag-chips::-webkit-scrollbar-thumb {
+  border-radius: 2px;
+  background: var(--border);
+}
+
+.quick-tag-chip,
+.quick-tag-input {
+  flex: 0 0 auto;
+  height: 36px;
+  padding: 0 13px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.quick-tag-chip {
+  cursor: pointer;
+}
+
+.quick-tag-chip.active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+}
+
+.quick-tag-add {
+  border-style: dashed;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.quick-tag-input {
+  width: 130px;
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.quick-tag-input::placeholder {
+  color: rgba(255, 255, 255, 0.58);
+}
+
+.quick-tag-undo {
+  align-self: flex-start;
+  margin-top: 12px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: #fecaca;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+@keyframes quick-tag-overlay-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes quick-tag-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .modal-buttons {
   display: flex;
   gap: 12px;
