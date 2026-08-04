@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getDateKey, DEFAULT_TAGS } from './utils.js'
 
 /** Модалка ручного добавления записи о курении с выбором даты, времени и тэга. */
@@ -10,19 +10,75 @@ export default function AddCigaretteModal({
   addMinutes,
   setAddMinutes,
   customTags = [],
+  hiddenTags = [],
   selectedTag,
   setSelectedTag,
   onAddCustomTag,
+  onDeleteTag,
   onSave,
   onClose,
 }) {
   const [addingTag, setAddingTag] = useState(false)
+  const [isEditingTags, setIsEditingTags] = useState(false)
   const [newTagName, setNewTagName] = useState('')
+  const longPressTimerRef = useRef(null)
+  const longPressTriggeredRef = useRef(false)
 
-  const tags = [...DEFAULT_TAGS, ...customTags]
+  const tags = [...DEFAULT_TAGS.filter((tag) => !hiddenTags.includes(tag)), ...customTags]
+
+  const finishEditing = useCallback(() => {
+    longPressTriggeredRef.current = false
+    setIsEditingTags(false)
+  }, [])
+
+  useEffect(
+    () => () => {
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current)
+    },
+    []
+  )
+
+  useEffect(() => {
+    if (!isEditingTags) return undefined
+    const finishOnEscape = (event) => {
+      if (event.key === 'Escape' && !addingTag) finishEditing()
+    }
+    document.addEventListener('keydown', finishOnEscape)
+    return () => document.removeEventListener('keydown', finishOnEscape)
+  }, [addingTag, finishEditing, isEditingTags])
+
+  const startLongPress = () => {
+    if (isEditingTags) return
+    longPressTriggeredRef.current = false
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current)
+    longPressTimerRef.current = setTimeout(() => {
+      longPressTriggeredRef.current = true
+      setIsEditingTags(true)
+      if (typeof navigator.vibrate === 'function') navigator.vibrate(30)
+    }, 500)
+  }
+
+  const stopLongPress = () => {
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current)
+  }
 
   const toggleTag = (tag) => {
+    if (longPressTriggeredRef.current) {
+      longPressTriggeredRef.current = false
+      return
+    }
+    if (isEditingTags) return
     setSelectedTag(selectedTag === tag ? '' : tag)
+  }
+
+  const deleteTag = (tag) => {
+    if (selectedTag === tag) setSelectedTag('')
+    onDeleteTag(tag)
+  }
+
+  const handleOverlayClick = () => {
+    if (isEditingTags) finishEditing()
+    else onClose()
   }
 
   const confirmNewTag = () => {
@@ -33,7 +89,7 @@ export default function AddCigaretteModal({
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
+    <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <h3>Добавить запись</h3>
         <div className="date-input-wrapper">
@@ -79,19 +135,50 @@ export default function AddCigaretteModal({
           </div>
         </div>
         <div className="tag-input-wrapper">
-          <label className="input-label">Тэг</label>
-          <div className="tag-chips">
-            {tags.map((tag) => (
-              <button
-                key={tag}
-                type="button"
-                className={`tag-chip ${selectedTag === tag ? 'active' : ''}`}
-                onClick={() => toggleTag(tag)}
-              >
-                {tag}
+          <div className="tag-input-header">
+            <label className="input-label">Тэг</label>
+            {isEditingTags && (
+              <button className="tag-edit-done" type="button" onClick={finishEditing}>
+                Готово
               </button>
+            )}
+          </div>
+          <p className="tag-edit-hint">
+            {isEditingTags
+              ? 'Нажмите на крестик, чтобы удалить тег'
+              : 'Удерживайте тег, чтобы удалить'}
+          </p>
+          <div className={`tag-chips ${isEditingTags ? 'editing' : ''}`}>
+            {tags.map((tag) => (
+              <div className="tag-chip-item" key={tag}>
+                <button
+                  type="button"
+                  className={`tag-chip ${selectedTag === tag ? 'active' : ''}`}
+                  onPointerDown={startLongPress}
+                  onPointerUp={stopLongPress}
+                  onPointerLeave={stopLongPress}
+                  onPointerCancel={stopLongPress}
+                  onContextMenu={(event) => event.preventDefault()}
+                  onClick={() => toggleTag(tag)}
+                >
+                  {tag}
+                </button>
+                {isEditingTags && (
+                  <button
+                    className="tag-chip-delete"
+                    type="button"
+                    aria-label={`Удалить тег ${tag}`}
+                    onClick={() => deleteTag(tag)}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
             ))}
-            {addingTag ? (
+            {tags.length === 0 && isEditingTags && (
+              <span className="tag-edit-empty">Тегов больше нет</span>
+            )}
+            {!isEditingTags && addingTag ? (
               <input
                 type="text"
                 className="tag-chip-input"
@@ -109,7 +196,7 @@ export default function AddCigaretteModal({
                   }
                 }}
               />
-            ) : (
+            ) : !isEditingTags ? (
               <button
                 type="button"
                 className="tag-chip tag-chip-add"
@@ -117,7 +204,7 @@ export default function AddCigaretteModal({
               >
                 + Тэг
               </button>
-            )}
+            ) : null}
           </div>
         </div>
         <div className="modal-buttons">

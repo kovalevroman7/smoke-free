@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useToast } from './hooks/useToast.js'
 import GoalModal from './GoalModal'
 import HomeTab from './HomeTab.jsx'
+import JournalTab from './JournalTab.jsx'
 import StatsTab from './StatsTab.jsx'
 import GoalsTab from './GoalsTab.jsx'
 import SettingsTab from './SettingsTab.jsx'
@@ -57,7 +58,7 @@ export default function App() {
   })
   const [openGoalSwipeId, setOpenGoalSwipeId] = useState(null)
   const [quickTagTimestamp, setQuickTagTimestamp] = useState(null)
-  const { toast, showToast } = useToast()
+  const { toast, showToast, hideToast } = useToast()
   const [timeSinceLast, setTimeSinceLast] = useState(0)
 
   useEffect(() => {
@@ -125,6 +126,9 @@ export default function App() {
         return {
           ...prev,
           customTags,
+          hiddenTags: DEFAULT_TAGS.includes(trimmed)
+            ? (prev.hiddenTags || []).filter((tag) => tag !== trimmed)
+            : prev.hiddenTags || [],
           cigaretteTags: { ...(prev.cigaretteTags || {}), [quickTagTimestamp]: trimmed },
         }
       })
@@ -150,6 +154,34 @@ export default function App() {
     setQuickTagTimestamp(null)
   }, [])
 
+  const deleteQuickTag = useCallback(
+    (tag) => {
+      const isDefault = DEFAULT_TAGS.includes(tag)
+      setData((prev) => ({
+        ...prev,
+        ...(isDefault
+          ? { hiddenTags: [...new Set([...(prev.hiddenTags || []), tag])] }
+          : { customTags: (prev.customTags || []).filter((item) => item !== tag) }),
+      }))
+      showToast('Тег удалён', {
+        label: 'Отменить',
+        onClick: () => {
+          setData((prev) => ({
+            ...prev,
+            ...(isDefault
+              ? { hiddenTags: (prev.hiddenTags || []).filter((item) => item !== tag) }
+              : {
+                  customTags: (prev.customTags || []).includes(tag)
+                    ? prev.customTags
+                    : [...(prev.customTags || []), tag],
+                }),
+          }))
+        },
+      })
+    },
+    [showToast]
+  )
+
   const startEditing = useCallback((timestamp, index) => {
     const date = new Date(timestamp)
     setEditHours(date.getHours().toString().padStart(2, '0'))
@@ -159,12 +191,23 @@ export default function App() {
 
   const saveEditedTime = useCallback(() => {
     if (editingIndex === null) return
-    const date = new Date(data.cigarettes[editingIndex])
+    const previousTimestamp = data.cigarettes[editingIndex]
+    const date = new Date(previousTimestamp)
     date.setHours(parseInt(editHours, 10) || 0, parseInt(editMinutes, 10) || 0, 0, 0)
-    setData((prev) => ({
-      ...prev,
-      cigarettes: prev.cigarettes.map((t, i) => (i === editingIndex ? date.getTime() : t)),
-    }))
+    const nextTimestamp = date.getTime()
+    setData((prev) => {
+      const cigaretteTags = { ...(prev.cigaretteTags || {}) }
+      const tag = cigaretteTags[previousTimestamp]
+      delete cigaretteTags[previousTimestamp]
+      if (tag) cigaretteTags[nextTimestamp] = tag
+      return {
+        ...prev,
+        cigarettes: prev.cigarettes
+          .map((timestamp, index) => (index === editingIndex ? nextTimestamp : timestamp))
+          .sort((left, right) => left - right),
+        cigaretteTags,
+      }
+    })
     setEditingIndex(null)
     setEditHours('')
     setEditMinutes('')
@@ -178,17 +221,32 @@ export default function App() {
 
   const deleteCigarette = useCallback(() => {
     if (editingIndex === null) return
-    setData((prev) => ({
-      ...prev,
-      cigarettes: prev.cigarettes.filter((_, i) => i !== editingIndex),
-    }))
+    setData((prev) => {
+      const deletedTimestamp = prev.cigarettes[editingIndex]
+      const cigaretteTags = { ...(prev.cigaretteTags || {}) }
+      delete cigaretteTags[deletedTimestamp]
+      return {
+        ...prev,
+        cigarettes: prev.cigarettes.filter((_, index) => index !== editingIndex),
+        cigaretteTags,
+      }
+    })
     setEditingIndex(null)
     setEditHours('')
     setEditMinutes('')
   }, [editingIndex])
 
   const deleteCigaretteByIndex = useCallback((index) => {
-    setData((prev) => ({ ...prev, cigarettes: prev.cigarettes.filter((_, i) => i !== index) }))
+    setData((prev) => {
+      const deletedTimestamp = prev.cigarettes[index]
+      const cigaretteTags = { ...(prev.cigaretteTags || {}) }
+      delete cigaretteTags[deletedTimestamp]
+      return {
+        ...prev,
+        cigarettes: prev.cigarettes.filter((_, cigaretteIndex) => cigaretteIndex !== index),
+        cigaretteTags,
+      }
+    })
     setOpenSwipeIndex(null)
   }, [])
 
@@ -214,8 +272,15 @@ export default function App() {
     if (!trimmed) return
     setData((prev) => {
       const existing = prev.customTags || []
-      if (existing.includes(trimmed) || DEFAULT_TAGS.includes(trimmed)) return prev
-      return { ...prev, customTags: [...existing, trimmed] }
+      const isDefault = DEFAULT_TAGS.includes(trimmed)
+      if (existing.includes(trimmed) && !isDefault) return prev
+      return {
+        ...prev,
+        customTags: isDefault ? existing : [...existing, trimmed],
+        hiddenTags: isDefault
+          ? (prev.hiddenTags || []).filter((tag) => tag !== trimmed)
+          : prev.hiddenTags || [],
+      }
     })
     setAddTag(trimmed)
   }, [])
@@ -368,6 +433,15 @@ export default function App() {
         />
       )}
 
+      {activeTab === 'journal' && (
+        <JournalTab
+          data={data}
+          onOpenAddModal={openAddModal}
+          onStartEditing={startEditing}
+          onDeleteByIndex={deleteCigaretteByIndex}
+        />
+      )}
+
       {activeTab === 'stats' && (
         <StatsTab
           data={data}
@@ -430,9 +504,11 @@ export default function App() {
           addMinutes={addMinutes}
           setAddMinutes={setAddMinutes}
           customTags={data.customTags || []}
+          hiddenTags={data.hiddenTags || []}
           selectedTag={addTag}
           setSelectedTag={setAddTag}
           onAddCustomTag={addCustomTag}
+          onDeleteTag={deleteQuickTag}
           onSave={saveManualCigarette}
           onClose={closeAddModal}
         />
@@ -454,10 +530,14 @@ export default function App() {
         <QuickTagPanel
           key={quickTagTimestamp}
           timestamp={quickTagTimestamp}
-          tags={[...DEFAULT_TAGS, ...(data.customTags || [])]}
+          tags={[
+            ...DEFAULT_TAGS.filter((tag) => !(data.hiddenTags || []).includes(tag)),
+            ...(data.customTags || []),
+          ]}
           selectedTag={(data.cigaretteTags || {})[quickTagTimestamp] || ''}
           onSelectTag={selectQuickTag}
           onAddCustomTag={addQuickCustomTag}
+          onDeleteTag={deleteQuickTag}
           onUndo={undoQuickCigarette}
           onClose={closeQuickTag}
         />
@@ -477,6 +557,19 @@ export default function App() {
             </svg>
           </span>
           Главная
+        </button>
+        <button
+          className={`nav-item ${activeTab === 'journal' ? 'active' : ''}`}
+          onClick={() => setActiveTab('journal')}
+        >
+          <span className="nav-icon nav-icon-journal" aria-hidden="true">
+            <span className="nav-journal-document">
+              <span />
+              <span />
+              <span />
+            </span>
+          </span>
+          Журнал
         </button>
         <button
           className={`nav-item ${activeTab === 'stats' ? 'active' : ''}`}
@@ -530,7 +623,23 @@ export default function App() {
         </button>
       </nav>
 
-      {toast && <div className="toast">{toast}</div>}
+      {toast && (
+        <div className="toast">
+          <span>{toast.message}</span>
+          {toast.action && (
+            <button
+              className="toast-action"
+              type="button"
+              onClick={() => {
+                toast.action.onClick()
+                hideToast()
+              }}
+            >
+              {toast.action.label}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

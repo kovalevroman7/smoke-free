@@ -9,6 +9,7 @@ export const defaultData = {
   goals: [],
   dayStartHour: 0,
   customTags: [],
+  hiddenTags: [],
   cigaretteTags: {},
 }
 
