@@ -51,6 +51,17 @@ function formatInterval(milliseconds) {
   return `+${hours}ч ${minutes}м с предыдущей`
 }
 
+function getAverageIntervalMinutes(entries) {
+  if (entries.length < 2) return 0
+  const totalInterval = entries[entries.length - 1].timestamp - entries[0].timestamp
+  return Math.round(totalInterval / (entries.length - 1) / 60000)
+}
+
+function formatAverageInterval(minutes) {
+  if (minutes <= 60) return `${minutes} мин.`
+  return `${Math.floor(minutes / 60)} ч. ${minutes % 60} мин.`
+}
+
 /** Помесячный журнал сигарет, сгруппированный по логическим дням пользователя. */
 export default function JournalTab({ data, onOpenAddModal, onStartEditing, onDeleteByIndex }) {
   const currentMonth = getMonthKey()
@@ -125,10 +136,7 @@ export default function JournalTab({ data, onOpenAddModal, onStartEditing, onDel
         ) : (
           dayGroups.map(({ dayKey, entries }) => {
             const isExpanded = expandedDay === dayKey
-            const dailyCost =
-              data.packPrice > 0 && data.cigarettesPerPack > 0
-                ? (entries.length / data.cigarettesPerPack) * data.packPrice
-                : 0
+            const averageIntervalMinutes = getAverageIntervalMinutes(entries)
 
             return (
               <article className={`journal-day-card ${isExpanded ? 'expanded' : ''}`} key={dayKey}>
@@ -141,7 +149,7 @@ export default function JournalTab({ data, onOpenAddModal, onStartEditing, onDel
                   <span className="journal-day-date">{formatDate(dayKey)}</span>
                   <span className="journal-day-summary">
                     <strong>{formatCigaretteCount(entries.length)}</strong>
-                    <span>Потрачено {Math.round(dailyCost)} руб.</span>
+                    <span>Средний интервал - {formatAverageInterval(averageIntervalMinutes)}</span>
                   </span>
                   <img
                     className="journal-day-chevron"
