@@ -1,5 +1,14 @@
 import SwipeableItem from './SwipeableItem.jsx'
-import { getDateKey, formatDate, getDayOfWeek, getHourlyCounts } from './utils.js'
+import {
+  formatCigaretteAmount,
+  formatCigaretteFraction,
+  getCigaretteAmount,
+  getDateKey,
+  formatDate,
+  getDayOfWeek,
+  getHourlyCounts,
+  sumCigaretteAmounts,
+} from './utils.js'
 import { getCompactGoalLabel, getGoalDayStatus, getPromiseStreak } from './goalUtils.js'
 import { GOAL_TYPES, getGoalCategory } from './goalTypes.js'
 
@@ -57,7 +66,10 @@ export default function StatsTab({
 
   const dailyCounts = periodDays.map((day) => ({
     day,
-    count: data.cigarettes.filter((t) => getDateKey(t) === day).length,
+    count: sumCigaretteAmounts(
+      data.cigarettes.filter((t) => getDateKey(t) === day),
+      data.cigaretteAmounts
+    ),
   }))
 
   const maxCount = Math.max(...dailyCounts.map((d) => d.count), 1)
@@ -69,7 +81,12 @@ export default function StatsTab({
       ? (periodTotal / data.cigarettesPerPack) * data.packPrice
       : 0
   const prevPeriodTotal = prevPeriodDays.reduce(
-    (sum, day) => sum + data.cigarettes.filter((t) => getDateKey(t) === day).length,
+    (sum, day) =>
+      sum +
+      sumCigaretteAmounts(
+        data.cigarettes.filter((t) => getDateKey(t) === day),
+        data.cigaretteAmounts
+      ),
     0
   )
   const periodDelta =
@@ -101,7 +118,7 @@ export default function StatsTab({
           <span style={{ color: 'var(--text-secondary)' }}>
             {statsPeriod === 'week' ? 'Всего за неделю' : 'Всего за месяц'}
           </span>
-          <strong>{periodTotal} шт</strong>
+          <strong>{formatCigaretteAmount(periodTotal)} шт</strong>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
           <span style={{ color: 'var(--text-secondary)' }}>В среднем в день</span>
@@ -162,7 +179,7 @@ export default function StatsTab({
               onClick={() => setSelectedDay(selectedDay === day ? null : day)}
               style={{ cursor: 'pointer' }}
             >
-              <span className="chart-count">{count}</span>
+              <span className="chart-count">{formatCigaretteAmount(count)}</span>
               <div className="chart-bar" style={{ height: `${(count / maxCount) * 100}px` }} />
               <span className="chart-label">{showLabel ? label : ''}</span>
             </div>
@@ -323,11 +340,13 @@ export default function StatsTab({
           <p className="day-detail-subtitle">Распределение по часам</p>
           <div className="hourly-chart">
             {(() => {
-              const hourly = getHourlyCounts(data.cigarettes, selectedDay)
+              const hourly = getHourlyCounts(data.cigarettes, selectedDay, data.cigaretteAmounts)
               const maxHourly = Math.max(...hourly.map((h) => h.count), 1)
               return hourly.map(({ hour, count }) => (
                 <div key={hour} className="hourly-bar-wrapper">
-                  {count > 0 && <span className="hourly-count">{count}</span>}
+                  {count > 0 && (
+                    <span className="hourly-count">{formatCigaretteAmount(count)}</span>
+                  )}
                   <div
                     className="hourly-bar"
                     style={{ height: `${(count / maxHourly) * 60}px` }}
@@ -395,6 +414,7 @@ export default function StatsTab({
                   {dayCigarettes.map((time, i) => {
                     const originalIndex = data.cigarettes.indexOf(time)
                     const tag = (data.cigaretteTags || {})[time]
+                    const amount = getCigaretteAmount(data.cigaretteAmounts, time)
                     return (
                       <SwipeableItem
                         key={time}
@@ -415,6 +435,11 @@ export default function StatsTab({
                               })}
                             </span>
                             {tag && <span className="history-tag">{tag}</span>}
+                            {amount !== 1 && (
+                              <span className="history-tag">
+                                {formatCigaretteFraction(amount)} сигареты
+                              </span>
+                            )}
                           </div>
                           <span className="history-ago">#{dayCigarettes.length - i}</span>
                         </div>

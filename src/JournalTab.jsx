@@ -1,5 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
-import { formatDate, getDateKey } from './utils.js'
+import {
+  formatCigaretteAmount,
+  formatCigaretteFraction,
+  formatDate,
+  getCigaretteAmount,
+  getDateKey,
+  sumCigaretteAmounts,
+} from './utils.js'
 
 const ASSET_PATH = `${import.meta.env.BASE_URL}figma-assets/journal`
 const MONTH_NAMES = [
@@ -33,6 +40,7 @@ function formatMonth(monthKey) {
 }
 
 function formatCigaretteCount(count) {
+  if (!Number.isInteger(count)) return `${formatCigaretteAmount(count)} сигареты`
   const mod10 = count % 10
   const mod100 = count % 100
   if (mod10 === 1 && mod100 !== 11) return `${count} сигарета`
@@ -148,7 +156,14 @@ export default function JournalTab({ data, onOpenAddModal, onStartEditing, onDel
                 >
                   <span className="journal-day-date">{formatDate(dayKey)}</span>
                   <span className="journal-day-summary">
-                    <strong>{formatCigaretteCount(entries.length)}</strong>
+                    <strong>
+                      {formatCigaretteCount(
+                        sumCigaretteAmounts(
+                          entries.map(({ timestamp }) => timestamp),
+                          data.cigaretteAmounts
+                        )
+                      )}
+                    </strong>
                     <span>Средний интервал - {formatAverageInterval(averageIntervalMinutes)}</span>
                   </span>
                   <img
@@ -164,6 +179,7 @@ export default function JournalTab({ data, onOpenAddModal, onStartEditing, onDel
                       const chronologicalIndex = entries.length - reverseIndex - 1
                       const previousTimestamp = entries[chronologicalIndex - 1]?.timestamp
                       const tag = (data.cigaretteTags || {})[timestamp]
+                      const amount = getCigaretteAmount(data.cigaretteAmounts, timestamp)
 
                       return (
                         <div className="journal-entry" key={`${timestamp}-${originalIndex}`}>
@@ -177,6 +193,11 @@ export default function JournalTab({ data, onOpenAddModal, onStartEditing, onDel
                                 })}
                               </strong>
                               {tag && <span className="journal-entry-tag">{tag}</span>}
+                              {amount !== 1 && (
+                                <span className="journal-entry-tag journal-entry-amount">
+                                  {formatCigaretteFraction(amount)}
+                                </span>
+                              )}
                             </span>
                             <span className="journal-entry-interval">
                               {previousTimestamp === undefined

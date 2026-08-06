@@ -1,5 +1,5 @@
-import { useState, useRef } from 'react'
-import { formatTime, formatTimeAgo } from './utils.js'
+import { useEffect, useState, useRef } from 'react'
+import { formatCigaretteAmount, formatTime, formatTimeAgo } from './utils.js'
 import { evaluateGoal, getPromiseStreak } from './goalUtils.js'
 import { GOAL_CATEGORIES, getGoalCategory } from './goalTypes.js'
 
@@ -80,7 +80,6 @@ export default function HomeTab({
   showAllLog,
   setShowAllLog,
   onAddCigarette,
-  onOpenAddModal,
   onStartEditing,
   onSetActiveTab,
   onToggleGoalCompletion,
@@ -94,8 +93,82 @@ export default function HomeTab({
   const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
   const lastTag = lastCigarette ? (data.cigaretteTags || {})[lastCigarette] : undefined
   const [fabOpen, setFabOpen] = useState(false)
+  const fabButtonRef = useRef(null)
+  const firstFractionOptionRef = useRef(null)
+  const fabOpenedByKeyboardRef = useRef(false)
+  const fabLongPressTimerRef = useRef(null)
+  const fabLongPressTriggeredRef = useRef(false)
+  const fabPressCancelledRef = useRef(false)
   const [rulesCollapsed, setRulesCollapsed] = useState(false)
   const [promisesCollapsed, setPromisesCollapsed] = useState(false)
+
+  useEffect(() => {
+    if (!fabOpen) return undefined
+    const previousOverflow = document.body.style.overflow
+    const closeOnEscape = (event) => {
+      if (event.key !== 'Escape') return
+      setFabOpen(false)
+      requestAnimationFrame(() => fabButtonRef.current?.focus())
+    }
+    document.body.style.overflow = 'hidden'
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [fabOpen])
+
+  useEffect(() => {
+    if (!fabOpen || !fabOpenedByKeyboardRef.current) return
+    fabOpenedByKeyboardRef.current = false
+    firstFractionOptionRef.current?.focus()
+  }, [fabOpen])
+
+  useEffect(
+    () => () => {
+      if (fabLongPressTimerRef.current) clearTimeout(fabLongPressTimerRef.current)
+    },
+    []
+  )
+
+  const startFabLongPress = (event) => {
+    if (event.button !== 0) return
+    fabPressCancelledRef.current = false
+    fabLongPressTriggeredRef.current = false
+    if (fabOpen) return
+    fabOpenedByKeyboardRef.current = false
+    if (fabLongPressTimerRef.current) clearTimeout(fabLongPressTimerRef.current)
+    fabLongPressTimerRef.current = setTimeout(() => {
+      fabLongPressTriggeredRef.current = true
+      setFabOpen(true)
+      if (typeof navigator.vibrate === 'function') navigator.vibrate(30)
+    }, 500)
+  }
+
+  const finishFabPress = () => {
+    if (fabLongPressTimerRef.current) clearTimeout(fabLongPressTimerRef.current)
+    if (fabLongPressTriggeredRef.current) {
+      fabLongPressTriggeredRef.current = false
+      return
+    }
+    if (fabOpen) {
+      setFabOpen(false)
+      return
+    }
+    if (!fabPressCancelledRef.current) {
+      onAddCigarette(1)
+    }
+  }
+
+  const cancelFabPress = () => {
+    if (fabLongPressTimerRef.current) clearTimeout(fabLongPressTimerRef.current)
+    fabPressCancelledRef.current = true
+  }
+
+  const addFraction = (amount) => {
+    onAddCigarette(amount)
+    setFabOpen(false)
+  }
 
   const renderGoalsAccordion = (category, categoryGoals, collapsed, setCollapsed) => {
     if (categoryGoals.length === 0) return null
@@ -167,7 +240,7 @@ export default function HomeTab({
         </div>
         <div className="count-card">
           <div className="count-label">сегодня</div>
-          <div className="count-value">{todaySmoked}</div>
+          <div className="count-value">{formatCigaretteAmount(todaySmoked)}</div>
         </div>
       </div>
 
@@ -232,35 +305,74 @@ export default function HomeTab({
 
       {fabOpen && (
         <>
-          <div className="fab-backdrop" onClick={() => setFabOpen(false)} />
-          <div className="fab-menu">
-            <button
-              className="fab-menu-item"
-              onClick={() => {
-                onAddCigarette()
-                setFabOpen(false)
-              }}
-            >
-              Выкурил сигарету
-            </button>
-            <button
-              className="fab-menu-item"
-              onClick={() => {
-                onOpenAddModal()
-                setFabOpen(false)
-              }}
-            >
-              Добавить вручную
-            </button>
+          <div className="fab-backdrop" aria-hidden="true" onClick={() => setFabOpen(false)} />
+          <div
+            className="fab-fraction-menu"
+            id="fab-fraction-menu"
+            role="menu"
+            aria-label="Выберите количество сигареты"
+            onKeyDown={(event) => {
+              if (!['ArrowUp', 'ArrowDown', 'Home', 'End'].includes(event.key)) return
+              event.preventDefault()
+              const items = [...event.currentTarget.querySelectorAll('[role="menuitem"]')]
+              const currentIndex = items.indexOf(document.activeElement)
+              if (event.key === 'Home') items[0]?.focus()
+              else if (event.key === 'End') items.at(-1)?.focus()
+              else {
+                const offset = event.key === 'ArrowDown' ? 1 : -1
+                items[(currentIndex + offset + items.length) % items.length]?.focus()
+              }
+            }}
+          >
+            {[
+              { amount: 0.75, symbol: '¾', label: '¾ сигареты' },
+              { amount: 0.5, symbol: '½', label: '½ сигареты' },
+              { amount: 0.25, symbol: '¼', label: '¼ сигареты' },
+            ].map(({ amount, symbol, label }) => (
+              <button
+                className="fab-fraction-item"
+                type="button"
+                key={amount}
+                ref={amount === 0.75 ? firstFractionOptionRef : undefined}
+                role="menuitem"
+                onClick={() => addFraction(amount)}
+                aria-label={`Добавить ${label}`}
+              >
+                <span className="fab-fraction-circle" aria-hidden="true">
+                  {symbol}
+                </span>
+                <span className="fab-fraction-label">{label}</span>
+              </button>
+            ))}
           </div>
         </>
       )}
       <button
+        ref={fabButtonRef}
         className={`fab ${fabOpen ? 'open' : ''}`}
-        aria-label="Добавить"
-        onClick={() => setFabOpen((v) => !v)}
+        aria-label={fabOpen ? 'Закрыть меню' : 'Добавить'}
+        aria-haspopup="menu"
+        aria-controls="fab-fraction-menu"
+        aria-expanded={fabOpen}
+        onPointerDown={startFabLongPress}
+        onPointerUp={finishFabPress}
+        onPointerLeave={cancelFabPress}
+        onPointerCancel={cancelFabPress}
+        onContextMenu={(event) => event.preventDefault()}
+        onKeyDown={(event) => {
+          if (fabOpen || (event.key !== 'ArrowUp' && event.key !== 'ArrowDown')) return
+          event.preventDefault()
+          fabOpenedByKeyboardRef.current = true
+          setFabOpen(true)
+        }}
+        onClick={(event) => {
+          if (event.detail === 0) {
+            if (fabOpen) setFabOpen(false)
+            else onAddCigarette(1)
+          }
+        }}
       >
-        +
+        {fabOpen ? '×' : '+'}
       </button>
     </>
   )

@@ -11,6 +11,7 @@ export const defaultData = {
   customTags: [],
   hiddenTags: [],
   cigaretteTags: {},
+  cigaretteAmounts: {},
 }
 
 let dayStartOffsetMs = 0
@@ -79,17 +80,40 @@ export function getDayOfWeek(dateKey) {
   return date.toLocaleDateString('ru-RU', { weekday: 'short' })
 }
 
-export function getHourlyCounts(cigarettes, dayKey) {
+export function getCigaretteAmount(cigaretteAmounts, timestamp) {
+  const amount = Number(cigaretteAmounts?.[timestamp])
+  return Number.isFinite(amount) && amount > 0 ? amount : 1
+}
+
+export function sumCigaretteAmounts(cigarettes, cigaretteAmounts) {
+  return cigarettes.reduce(
+    (total, timestamp) => total + getCigaretteAmount(cigaretteAmounts, timestamp),
+    0
+  )
+}
+
+export function formatCigaretteAmount(amount) {
+  return Number(amount).toLocaleString('ru-RU', { maximumFractionDigits: 2 })
+}
+
+export function formatCigaretteFraction(amount) {
+  return { 0.25: '¼', 0.5: '½', 0.75: '¾' }[amount] || formatCigaretteAmount(amount)
+}
+
+export function getHourlyCounts(cigarettes, dayKey, cigaretteAmounts) {
   const hours = Array.from({ length: 24 }, (_, i) => ({ hour: i, count: 0 }))
   cigarettes
     .filter((t) => getDateKey(t) === dayKey)
     .forEach((t) => {
-      hours[new Date(t).getHours()].count++
+      hours[new Date(t).getHours()].count += getCigaretteAmount(cigaretteAmounts, t)
     })
   return hours
 }
 
-export function getTodaySmokedCount(cigarettes) {
+export function getTodaySmokedCount(cigarettes, cigaretteAmounts) {
   const todayKey = getDateKey(Date.now())
-  return cigarettes.filter((t) => getDateKey(t) === todayKey).length
+  return sumCigaretteAmounts(
+    cigarettes.filter((t) => getDateKey(t) === todayKey),
+    cigaretteAmounts
+  )
 }

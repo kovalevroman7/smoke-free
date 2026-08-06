@@ -81,24 +81,34 @@ export default function App() {
     setDayStartHour(data.dayStartHour)
   }, [data.dayStartHour])
 
-  const addCigarette = useCallback(() => {
-    const now = Date.now()
-    setData((prev) => {
-      if (prev.goals?.length) {
-        const todayKey = getDateKey(now)
-        const todayCigs = prev.cigarettes.filter((t) => getDateKey(t) === todayKey)
-        const violated = prev.goals
-          .filter((g) => g.enabled)
-          .filter((g) => checkGoalViolationOnAdd(g, todayCigs, now))
-        if (violated.length > 0) {
-          const names = violated.map((g) => GOAL_TYPES[g.type]?.name || g.type).join(', ')
-          setTimeout(() => showToast(`Нарушает цель: ${names}`), 0)
+  const addCigarette = useCallback(
+    (amount = 1) => {
+      const now = Date.now()
+      setData((prev) => {
+        if (prev.goals?.length) {
+          const todayKey = getDateKey(now)
+          const todayCigs = prev.cigarettes.filter((t) => getDateKey(t) === todayKey)
+          const violated = prev.goals
+            .filter((g) => g.enabled)
+            .filter((g) => checkGoalViolationOnAdd(g, todayCigs, now))
+          if (violated.length > 0) {
+            const names = violated.map((g) => GOAL_TYPES[g.type]?.name || g.type).join(', ')
+            setTimeout(() => showToast(`Нарушает цель: ${names}`), 0)
+          }
         }
-      }
-      return { ...prev, cigarettes: [...prev.cigarettes, now] }
-    })
-    setQuickTagTimestamp(now)
-  }, [showToast])
+        return {
+          ...prev,
+          cigarettes: [...prev.cigarettes, now],
+          cigaretteAmounts:
+            amount === 1
+              ? prev.cigaretteAmounts || {}
+              : { ...(prev.cigaretteAmounts || {}), [now]: amount },
+        }
+      })
+      setQuickTagTimestamp(now)
+    },
+    [showToast]
+  )
 
   const selectQuickTag = useCallback(
     (tag) => {
@@ -144,7 +154,9 @@ export default function App() {
       if (index !== -1) cigarettes.splice(index, 1)
       const cigaretteTags = { ...(prev.cigaretteTags || {}) }
       delete cigaretteTags[quickTagTimestamp]
-      return { ...prev, cigarettes, cigaretteTags }
+      const cigaretteAmounts = { ...(prev.cigaretteAmounts || {}) }
+      delete cigaretteAmounts[quickTagTimestamp]
+      return { ...prev, cigarettes, cigaretteTags, cigaretteAmounts }
     })
     setQuickTagTimestamp(null)
     showToast('Добавление отменено')
@@ -200,12 +212,17 @@ export default function App() {
       const tag = cigaretteTags[previousTimestamp]
       delete cigaretteTags[previousTimestamp]
       if (tag) cigaretteTags[nextTimestamp] = tag
+      const cigaretteAmounts = { ...(prev.cigaretteAmounts || {}) }
+      const amount = cigaretteAmounts[previousTimestamp]
+      delete cigaretteAmounts[previousTimestamp]
+      if (amount) cigaretteAmounts[nextTimestamp] = amount
       return {
         ...prev,
         cigarettes: prev.cigarettes
           .map((timestamp, index) => (index === editingIndex ? nextTimestamp : timestamp))
           .sort((left, right) => left - right),
         cigaretteTags,
+        cigaretteAmounts,
       }
     })
     setEditingIndex(null)
@@ -225,10 +242,13 @@ export default function App() {
       const deletedTimestamp = prev.cigarettes[editingIndex]
       const cigaretteTags = { ...(prev.cigaretteTags || {}) }
       delete cigaretteTags[deletedTimestamp]
+      const cigaretteAmounts = { ...(prev.cigaretteAmounts || {}) }
+      delete cigaretteAmounts[deletedTimestamp]
       return {
         ...prev,
         cigarettes: prev.cigarettes.filter((_, index) => index !== editingIndex),
         cigaretteTags,
+        cigaretteAmounts,
       }
     })
     setEditingIndex(null)
@@ -241,10 +261,13 @@ export default function App() {
       const deletedTimestamp = prev.cigarettes[index]
       const cigaretteTags = { ...(prev.cigaretteTags || {}) }
       delete cigaretteTags[deletedTimestamp]
+      const cigaretteAmounts = { ...(prev.cigaretteAmounts || {}) }
+      delete cigaretteAmounts[deletedTimestamp]
       return {
         ...prev,
         cigarettes: prev.cigarettes.filter((_, cigaretteIndex) => cigaretteIndex !== index),
         cigaretteTags,
+        cigaretteAmounts,
       }
     })
     setOpenSwipeIndex(null)
@@ -416,7 +439,7 @@ export default function App() {
   const todayCigarettes = data.cigarettes
     .filter((t) => getDateKey(t) === todayKey)
     .sort((a, b) => b - a)
-  const todaySmoked = getTodaySmokedCount(data.cigarettes)
+  const todaySmoked = getTodaySmokedCount(data.cigarettes, data.cigaretteAmounts)
 
   return (
     <div className="app">
@@ -427,7 +450,6 @@ export default function App() {
           todayCigarettes={todayCigarettes}
           todaySmoked={todaySmoked}
           onAddCigarette={addCigarette}
-          onOpenAddModal={openAddModal}
           onSetActiveTab={setActiveTab}
           onToggleGoalCompletion={toggleGoalCompletion}
         />
@@ -530,6 +552,7 @@ export default function App() {
         <QuickTagPanel
           key={quickTagTimestamp}
           timestamp={quickTagTimestamp}
+          amount={data.cigaretteAmounts?.[quickTagTimestamp] || 1}
           tags={[
             ...DEFAULT_TAGS.filter((tag) => !(data.hiddenTags || []).includes(tag)),
             ...(data.customTags || []),

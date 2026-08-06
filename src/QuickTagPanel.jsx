@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { formatCigaretteFraction } from './utils.js'
 
 const AUTO_CLOSE_DELAY = 8000
 
 /** Необязательная панель тегирования только что добавленной сигареты. */
 export default function QuickTagPanel({
   timestamp,
+  amount,
   tags,
   selectedTag,
   onSelectTag,
@@ -105,7 +107,11 @@ export default function QuickTagPanel({
       >
         <div className="quick-tag-header">
           <div>
-            <strong id="quick-tag-title">Сигарета добавлена</strong>
+            <strong id="quick-tag-title">
+              {amount === 1
+                ? 'Сигарета добавлена'
+                : `Добавлено ${formatCigaretteFraction(amount)} сигареты`}
+            </strong>
             <span>
               {new Date(timestamp).toLocaleTimeString('ru-RU', {
                 hour: '2-digit',
