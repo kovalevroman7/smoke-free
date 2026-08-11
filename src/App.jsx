@@ -9,7 +9,21 @@ import SettingsTab from './SettingsTab.jsx'
 import AddCigaretteModal from './AddCigaretteModal.jsx'
 import EditCigaretteModal from './EditCigaretteModal.jsx'
 import QuickTagPanel from './QuickTagPanel.jsx'
+import HabitsTab from './HabitsTab.jsx'
+import HabitFormSheet from './HabitFormSheet.jsx'
+import HabitActionsSheet from './HabitActionsSheet.jsx'
+import HabitOutcomeSheet from './HabitOutcomeSheet.jsx'
+import ConfettiBurst from './ConfettiBurst.jsx'
+import { CONFETTI_VISIBLE_DURATION_MS } from './habitOutcomeMotion.js'
 import { GOAL_TYPES, getGoalCategory } from './goalTypes.js'
+import { HABIT_STATUS } from './habitTypes.js'
+import {
+  addFocusedHabit,
+  addHabitEvent,
+  changeHabitStatus,
+  createHabit,
+  updateHabit,
+} from './habitUtils.js'
 import {
   loadData,
   saveData,
@@ -58,6 +72,11 @@ export default function App() {
   })
   const [openGoalSwipeId, setOpenGoalSwipeId] = useState(null)
   const [quickTagTimestamp, setQuickTagTimestamp] = useState(null)
+  const [showHabitForm, setShowHabitForm] = useState(false)
+  const [editingHabitId, setEditingHabitId] = useState(null)
+  const [habitActionsId, setHabitActionsId] = useState(null)
+  const [habitOutcomeId, setHabitOutcomeId] = useState(null)
+  const [habitCelebration, setHabitCelebration] = useState(null)
   const { toast, showToast, hideToast } = useToast()
   const [timeSinceLast, setTimeSinceLast] = useState(0)
 
@@ -80,6 +99,16 @@ export default function App() {
   useEffect(() => {
     setDayStartHour(data.dayStartHour)
   }, [data.dayStartHour])
+
+  useEffect(() => {
+    if (!habitCelebration) return undefined
+    const timeout = window.setTimeout(() => setHabitCelebration(null), CONFETTI_VISIBLE_DURATION_MS)
+    return () => window.clearTimeout(timeout)
+  }, [habitCelebration])
+
+  const startHabitCelebration = useCallback((origin) => {
+    setHabitCelebration({ ...origin, id: Date.now() })
+  }, [])
 
   const addCigarette = useCallback(
     (amount = 1) => {
@@ -435,11 +464,94 @@ export default function App() {
     [showToast]
   )
 
+  const openCreateHabit = useCallback(() => {
+    setEditingHabitId(null)
+    setShowHabitForm(true)
+  }, [])
+
+  const openEditHabit = useCallback((habitId) => {
+    setEditingHabitId(habitId)
+    setHabitActionsId(null)
+    setShowHabitForm(true)
+  }, [])
+
+  const closeHabitForm = useCallback(() => {
+    setShowHabitForm(false)
+    setEditingHabitId(null)
+  }, [])
+
+  const saveHabit = useCallback(
+    (form) => {
+      setData((prev) => {
+        const habits = prev.habits || []
+        if (editingHabitId) {
+          return { ...prev, habits: updateHabit(habits, editingHabitId, form) }
+        }
+        const habit = createHabit(form)
+        return { ...prev, habits: addFocusedHabit(habits, habit) }
+      })
+      closeHabitForm()
+      showToast(editingHabitId ? 'Привычка обновлена' : 'Привычка создана')
+    },
+    [closeHabitForm, editingHabitId, showToast]
+  )
+
+  const moveHabit = useCallback(
+    (habitId, nextStatus) => {
+      setData((prev) => ({
+        ...prev,
+        habits: changeHabitStatus(prev.habits || [], habitId, nextStatus),
+      }))
+      setHabitActionsId(null)
+      const messages = {
+        [HABIT_STATUS.FOCUS]: 'Привычка теперь в фокусе',
+        [HABIT_STATUS.MAINTENANCE]: 'Привычка переведена в поддержание',
+        [HABIT_STATUS.ARCHIVED]: 'Привычка перемещена в архив',
+      }
+      showToast(messages[nextStatus])
+    },
+    [showToast]
+  )
+
+  const deleteHabit = useCallback(
+    (habitId) => {
+      setData((prev) => ({
+        ...prev,
+        habits: (prev.habits || []).filter((habit) => habit.id !== habitId),
+      }))
+      setHabitActionsId(null)
+      showToast('Привычка удалена')
+    },
+    [showToast]
+  )
+
+  const recordHabitOutcome = useCallback(
+    (habitId, outcome) => {
+      setData((prev) => ({
+        ...prev,
+        habits: addHabitEvent(prev.habits || [], habitId, outcome),
+      }))
+      setHabitOutcomeId(null)
+      showToast(outcome === 'replacement' ? 'Новая привычка укреплена' : 'Ситуация отмечена')
+    },
+    [showToast]
+  )
+
   const todayKey = getDateKey(Date.now())
   const todayCigarettes = data.cigarettes
     .filter((t) => getDateKey(t) === todayKey)
     .sort((a, b) => b - a)
   const todaySmoked = getTodaySmokedCount(data.cigarettes, data.cigaretteAmounts)
+  const editingHabit = (data.habits || []).find((habit) => habit.id === editingHabitId)
+  const actionHabit = (data.habits || []).find((habit) => habit.id === habitActionsId)
+  const outcomeHabit = (data.habits || []).find((habit) => habit.id === habitOutcomeId)
+  const habitTriggerSuggestions = [
+    ...new Set([
+      ...DEFAULT_TAGS,
+      ...(data.customTags || []),
+      ...(data.habits || []).map((habit) => habit.trigger),
+    ]),
+  ].filter(Boolean)
 
   return (
     <div className="app">
@@ -452,6 +564,18 @@ export default function App() {
           onAddCigarette={addCigarette}
           onSetActiveTab={setActiveTab}
           onToggleGoalCompletion={toggleGoalCompletion}
+          onOpenHabits={() => setActiveTab('habits')}
+          onCreateHabit={openCreateHabit}
+          onHabitSituation={setHabitOutcomeId}
+        />
+      )}
+
+      {activeTab === 'habits' && (
+        <HabitsTab
+          habits={data.habits || []}
+          onCreate={openCreateHabit}
+          onOpenActions={setHabitActionsId}
+          onSituation={setHabitOutcomeId}
         />
       )}
 
@@ -566,9 +690,39 @@ export default function App() {
         />
       )}
 
+      {showHabitForm && (
+        <HabitFormSheet
+          habit={editingHabit}
+          suggestions={habitTriggerSuggestions}
+          onSave={saveHabit}
+          onClose={closeHabitForm}
+        />
+      )}
+
+      {actionHabit && (
+        <HabitActionsSheet
+          habit={actionHabit}
+          onChangeStatus={(nextStatus) => moveHabit(actionHabit.id, nextStatus)}
+          onEdit={() => openEditHabit(actionHabit.id)}
+          onDelete={() => deleteHabit(actionHabit.id)}
+          onClose={() => setHabitActionsId(null)}
+        />
+      )}
+
+      {outcomeHabit && (
+        <HabitOutcomeSheet
+          habit={outcomeHabit}
+          onSelect={(outcome) => recordHabitOutcome(outcomeHabit.id, outcome)}
+          onCelebrate={startHabitCelebration}
+          onClose={() => setHabitOutcomeId(null)}
+        />
+      )}
+
+      {habitCelebration && <ConfettiBurst key={habitCelebration.id} origin={habitCelebration} />}
+
       <nav className="nav">
         <button
-          className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
+          className={`nav-item ${['home', 'habits'].includes(activeTab) ? 'active' : ''}`}
           onClick={() => setActiveTab('home')}
         >
           <span className="nav-icon">

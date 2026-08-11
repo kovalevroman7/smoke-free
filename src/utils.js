@@ -7,6 +7,7 @@ export const defaultData = {
   packPrice: 0,
   cigarettesPerPack: 20,
   goals: [],
+  habits: [],
   dayStartHour: 0,
   customTags: [],
   hiddenTags: [],

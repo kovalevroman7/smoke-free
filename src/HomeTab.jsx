@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { formatCigaretteAmount, formatTime, formatTimeAgo } from './utils.js'
 import { evaluateGoal, getPromiseStreak } from './goalUtils.js'
 import { GOAL_CATEGORIES, getGoalCategory } from './goalTypes.js'
+import HomeHabits from './HomeHabits.jsx'
 
 /** Иконка статуса цели: галочка (успех), часы (в процессе), крестик (нарушено). */
 function GoalStatusIcon({ status }) {
@@ -83,6 +84,9 @@ export default function HomeTab({
   onStartEditing,
   onSetActiveTab,
   onToggleGoalCompletion,
+  onOpenHabits,
+  onCreateHabit,
+  onHabitSituation,
 }) {
   // Блок «Сегодня» временно скрыт (код сохранён).
   const showTodayBlock = false
@@ -243,6 +247,13 @@ export default function HomeTab({
           <div className="count-value">{formatCigaretteAmount(todaySmoked)}</div>
         </div>
       </div>
+
+      <HomeHabits
+        habits={data.habits || []}
+        onOpenAll={onOpenHabits}
+        onCreate={onCreateHabit}
+        onSituation={onHabitSituation}
+      />
 
       {enabledGoals.length === 0 ? (
         <div className="reduction-setup-card">
