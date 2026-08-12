@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { formatCigaretteAmount, formatTime, formatTimeAgo } from './utils.js'
-import { evaluateGoal, getPromiseStreak } from './goalUtils.js'
-import { GOAL_CATEGORIES, getGoalCategory } from './goalTypes.js'
+import { evaluateGoal } from './goalUtils.js'
 import HomeHabits from './HomeHabits.jsx'
 
 /** Иконка статуса цели: галочка (успех), часы (в процессе), крестик (нарушено). */
@@ -38,28 +37,10 @@ function GoalStatusIcon({ status }) {
   )
 }
 
-/** Карточка активной цели. Для обещаний поддерживает отметку выполнения долгим нажатием. */
-function GoalWidget({ goal, result, streak, onLongPress }) {
-  const timerRef = useRef(null)
-  const isPromise = getGoalCategory(goal) === 'promise'
-
-  const start = () => {
-    if (!isPromise) return
-    timerRef.current = setTimeout(() => onLongPress(goal.id), 500)
-  }
-  const cancel = () => {
-    clearTimeout(timerRef.current)
-  }
-
+/** Карточка активного правила. */
+function GoalWidget({ result }) {
   return (
-    <div
-      className={`goal-widget goal-status-${result.status}${isPromise ? ' goal-widget-pressable' : ''}`}
-      onPointerDown={start}
-      onPointerUp={cancel}
-      onPointerLeave={cancel}
-      onPointerCancel={cancel}
-      onContextMenu={isPromise ? (e) => e.preventDefault() : undefined}
-    >
+    <div className={`goal-widget goal-status-${result.status}`}>
       <div className="goal-widget-icon">
         <GoalStatusIcon status={result.status} />
       </div>
@@ -67,7 +48,6 @@ function GoalWidget({ goal, result, streak, onLongPress }) {
         <div className="goal-widget-label">{result.label}</div>
         <div className="goal-widget-hint">{result.hint}</div>
       </div>
-      {isPromise && streak > 0 && <div className="goal-widget-streak">🔥 {streak}</div>}
     </div>
   )
 }
@@ -83,7 +63,6 @@ export default function HomeTab({
   onAddCigarette,
   onStartEditing,
   onSetActiveTab,
-  onToggleGoalCompletion,
   onOpenHabits,
   onCreateHabit,
   onHabitSituation,
@@ -92,8 +71,6 @@ export default function HomeTab({
   const showTodayBlock = false
   const goals = data.goals || []
   const enabledGoals = goals.filter((g) => g.enabled)
-  const enabledRules = enabledGoals.filter((g) => getGoalCategory(g) === 'rule')
-  const enabledPromises = enabledGoals.filter((g) => getGoalCategory(g) === 'promise')
   const lastCigarette = data.cigarettes[data.cigarettes.length - 1]
   const lastTag = lastCigarette ? (data.cigaretteTags || {})[lastCigarette] : undefined
   const [fabOpen, setFabOpen] = useState(false)
@@ -104,7 +81,6 @@ export default function HomeTab({
   const fabLongPressTriggeredRef = useRef(false)
   const fabPressCancelledRef = useRef(false)
   const [rulesCollapsed, setRulesCollapsed] = useState(false)
-  const [promisesCollapsed, setPromisesCollapsed] = useState(false)
 
   useEffect(() => {
     if (!fabOpen) return undefined
@@ -174,9 +150,8 @@ export default function HomeTab({
     setFabOpen(false)
   }
 
-  const renderGoalsAccordion = (category, categoryGoals, collapsed, setCollapsed) => {
-    if (categoryGoals.length === 0) return null
-    const meta = GOAL_CATEGORIES[category]
+  const renderGoalsAccordion = (collapsed, setCollapsed) => {
+    if (enabledGoals.length === 0) return null
     return (
       <div className="goals-card">
         <button
@@ -184,7 +159,7 @@ export default function HomeTab({
           onClick={() => setCollapsed((v) => !v)}
           aria-expanded={!collapsed}
         >
-          <h2>{meta.name}</h2>
+          <h2>Правила</h2>
           <span className={`goals-card-chevron ${collapsed ? 'collapsed' : ''}`}>
             <svg
               viewBox="0 0 24 24"
@@ -200,18 +175,9 @@ export default function HomeTab({
         </button>
         {!collapsed && (
           <div className="goal-widgets">
-            {categoryGoals.map((goal) => {
+            {enabledGoals.map((goal) => {
               const result = evaluateGoal(goal, todayCigarettes, Date.now())
-              const streak = category === 'promise' ? getPromiseStreak(goal).current : 0
-              return (
-                <GoalWidget
-                  key={goal.id}
-                  goal={goal}
-                  result={result}
-                  streak={streak}
-                  onLongPress={onToggleGoalCompletion}
-                />
-              )
+              return <GoalWidget key={goal.id} result={result} />
             })}
           </div>
         )}
@@ -265,15 +231,7 @@ export default function HomeTab({
           </button>
         </div>
       ) : (
-        <>
-          {renderGoalsAccordion('rule', enabledRules, rulesCollapsed, setRulesCollapsed)}
-          {renderGoalsAccordion(
-            'promise',
-            enabledPromises,
-            promisesCollapsed,
-            setPromisesCollapsed
-          )}
-        </>
+        <>{renderGoalsAccordion(rulesCollapsed, setRulesCollapsed)}</>
       )}
 
       {showTodayBlock && (

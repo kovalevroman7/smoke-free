@@ -31,7 +31,6 @@ export function getCompactGoalLabel(goal) {
   if (goal.type === 'morning_interval')
     return `Первые ${p.count} с интервалом ${p.intervalMinutes} мин`
   if (goal.type === 'evening_interval') return `После ${p.afterTime}: ≥${p.intervalMinutes} мин`
-  if (goal.type === 'custom') return p.title || 'Своя цель'
   return GOAL_TYPES[goal.type]?.name || ''
 }
 
@@ -167,16 +166,6 @@ export function evaluateGoal(goal, dayCigarettes, now) {
     }
   }
 
-  if (goal.type === 'custom') {
-    const title = goal.params.title || 'Своя цель'
-    const dayKey = getDateKey(now)
-    const done = (goal.completedDates || []).includes(dayKey)
-    if (done) return { status: 'success', label: title, hint: 'выполнено' }
-    const isToday = dayKey === getDateKey(Date.now())
-    if (isToday) return { status: 'pending', label: title, hint: 'отметьте выполнение' }
-    return { status: 'fail', label: title, hint: 'не выполнено' }
-  }
-
   return { status: 'pending', label: '—', hint: '' }
 }
 
@@ -196,40 +185,4 @@ export function getGoalDayStatus(goal, dayCigarettes, dayKey) {
   if (result.status === 'success') return 'success'
   if (!isToday) return 'success'
   return 'pending'
-}
-
-/**
- * Стрик по «Обещанию»: считает подряд идущие выполненные дни.
- * current — текущая серия, живая пока обещание выполнено сегодня или вчера.
- * best — самая длинная серия за всё время.
- */
-export function getPromiseStreak(goal) {
-  const dayMs = 24 * 60 * 60 * 1000
-  const toTime = (key) => new Date(`${key}T00:00:00`).getTime()
-  const dates = [...new Set(goal.completedDates || [])].sort()
-  if (dates.length === 0) return { current: 0, best: 0 }
-
-  let best = 0
-  let run = 0
-  let prev = null
-  for (const key of dates) {
-    if (prev !== null && getDateKey(toTime(key) - dayMs) === prev) run++
-    else run = 1
-    if (run > best) best = run
-    prev = key
-  }
-
-  const set = new Set(dates)
-  const todayKey = getDateKey(Date.now())
-  const yesterdayKey = getDateKey(Date.now() - dayMs)
-  let current = 0
-  let cursorKey = set.has(todayKey) ? todayKey : set.has(yesterdayKey) ? yesterdayKey : null
-  if (cursorKey) {
-    let t = toTime(cursorKey)
-    while (set.has(getDateKey(t))) {
-      current++
-      t -= dayMs
-    }
-  }
-  return { current, best }
 }

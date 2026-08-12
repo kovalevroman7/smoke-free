@@ -1529,19 +1529,6 @@ select {
   background: var(--goal-bg, #eef0f2);
 }
 
-/* Кастомная цель: отметка выполнения долгим нажатием */
-.goal-widget-pressable {
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
-  transition: transform 0.1s ease;
-}
-
-.goal-widget-pressable:active {
-  transform: scale(0.98);
-}
-
 .goal-widget-icon {
   flex-shrink: 0;
   width: 44px;
@@ -1763,40 +1750,6 @@ select {
   text-align: center;
 }
 
-/* Переключатель категории цели в модалке (Правило / Обещание) */
-.goal-category-toggle {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-bottom: 8px;
-}
-
-.goal-category-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 12px 8px;
-  border: 2px solid var(--border);
-  border-radius: 10px;
-  background: var(--bg);
-  color: var(--text-secondary);
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.goal-category-btn.active {
-  border-color: var(--primary);
-  background: rgba(16, 185, 129, 0.1);
-  color: var(--primary);
-}
-
-.goal-category-icon {
-  font-size: 18px;
-}
-
 /* Секции категорий во вкладке «Цели» */
 .goals-section {
   margin-bottom: 20px;
@@ -1852,22 +1805,6 @@ select {
 
 .goal-onboarding-bucket-title p {
   font-size: 12px;
-  color: var(--text-secondary);
-}
-
-/* Бейдж стрика на виджете обещания */
-.goal-widget-streak {
-  flex-shrink: 0;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--goal-accent, var(--text-secondary));
-}
-
-/* Стрик обещания в статистике */
-.goals-week-goal-streak {
-  flex-shrink: 0;
-  font-size: 12px;
-  font-weight: 600;
   color: var(--text-secondary);
 }
 

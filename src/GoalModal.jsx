@@ -1,4 +1,4 @@
-import { GOAL_TYPES, GOAL_CATEGORIES } from './goalTypes'
+import { GOAL_TYPES } from './goalTypes'
 
 export default function GoalModal({
   editingGoalId,
@@ -8,26 +8,8 @@ export default function GoalModal({
   onDelete,
   onClose,
 }) {
-  const category = goalForm.category || 'rule'
-  const isPromise = category === 'promise'
-  const categoryTypes = Object.entries(GOAL_TYPES).filter(([, meta]) => meta.category === category)
-
-  const title = editingGoalId
-    ? isPromise
-      ? 'Редактировать обещание'
-      : 'Редактировать правило'
-    : isPromise
-      ? 'Новое обещание'
-      : 'Новое правило'
-
-  const selectCategory = (nextCategory) => {
-    if (nextCategory === category) return
-    setGoalForm((f) => ({
-      ...f,
-      category: nextCategory,
-      type: nextCategory === 'promise' ? 'custom' : 'silence',
-    }))
-  }
+  const goalTypes = Object.entries(GOAL_TYPES)
+  const title = editingGoalId ? 'Редактировать правило' : 'Новое правило'
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -36,27 +18,9 @@ export default function GoalModal({
 
         {!editingGoalId && (
           <div className="settings-input-wrapper">
-            <div className="goal-category-toggle">
-              {Object.entries(GOAL_CATEGORIES).map(([key, meta]) => (
-                <button
-                  key={key}
-                  className={`goal-category-btn ${category === key ? 'active' : ''}`}
-                  onClick={() => selectCategory(key)}
-                >
-                  <span className="goal-category-icon">{meta.icon}</span>
-                  <span className="goal-category-name">{meta.name}</span>
-                </button>
-              ))}
-            </div>
-            <p className="type-hint">{GOAL_CATEGORIES[category]?.hint}</p>
-          </div>
-        )}
-
-        {!editingGoalId && !isPromise && (
-          <div className="settings-input-wrapper">
             <label className="input-label">Тип правила</label>
             <div className="goal-type-grid">
-              {categoryTypes.map(([key, meta]) => (
+              {goalTypes.map(([key, meta]) => (
                 <button
                   key={key}
                   className={`goal-type-btn ${goalForm.type === key ? 'active' : ''}`}
@@ -68,20 +32,6 @@ export default function GoalModal({
               ))}
             </div>
             <p className="type-hint">{GOAL_TYPES[goalForm.type]?.description}</p>
-          </div>
-        )}
-
-        {goalForm.type === 'custom' && (
-          <div className="settings-input-wrapper">
-            <label className="input-label">Что обещаете себе</label>
-            <input
-              type="text"
-              className="settings-input"
-              placeholder="Например: Прогулка вместо перекура"
-              value={goalForm.title}
-              maxLength={60}
-              onChange={(e) => setGoalForm((f) => ({ ...f, title: e.target.value }))}
-            />
           </div>
         )}
 
@@ -185,11 +135,7 @@ export default function GoalModal({
           <button className="modal-btn cancel" onClick={onClose}>
             Отмена
           </button>
-          <button
-            className="modal-btn save"
-            onClick={onSave}
-            disabled={goalForm.type === 'custom' && !goalForm.title.trim()}
-          >
+          <button className="modal-btn save" onClick={onSave}>
             {editingGoalId ? 'Сохранить' : 'Создать'}
           </button>
         </div>

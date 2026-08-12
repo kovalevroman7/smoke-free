@@ -15,7 +15,7 @@ import HabitActionsSheet from './HabitActionsSheet.jsx'
 import HabitOutcomeSheet from './HabitOutcomeSheet.jsx'
 import ConfettiBurst from './ConfettiBurst.jsx'
 import { CONFETTI_VISIBLE_DURATION_MS } from './habitOutcomeMotion.js'
-import { GOAL_TYPES, getGoalCategory } from './goalTypes.js'
+import { GOAL_TYPES } from './goalTypes.js'
 import { HABIT_STATUS } from './habitTypes.js'
 import {
   addFocusedHabit,
@@ -59,7 +59,6 @@ export default function App() {
   const [showGoalModal, setShowGoalModal] = useState(false)
   const [editingGoalId, setEditingGoalId] = useState(null)
   const [goalForm, setGoalForm] = useState({
-    category: 'rule',
     type: 'silence',
     from: '22:00',
     to: '08:00',
@@ -68,7 +67,6 @@ export default function App() {
     count: '3',
     intervalMinutes: '30',
     afterTime: '20:00',
-    title: '',
   })
   const [openGoalSwipeId, setOpenGoalSwipeId] = useState(null)
   const [quickTagTimestamp, setQuickTagTimestamp] = useState(null)
@@ -358,11 +356,10 @@ export default function App() {
     }))
   }, [settingsPackPrice, settingsCigarettesPerPack, settingsDayStartHour])
 
-  const openCreateGoal = useCallback((category = 'rule') => {
+  const openCreateGoal = useCallback(() => {
     setEditingGoalId(null)
     setGoalForm({
-      category,
-      type: category === 'promise' ? 'custom' : 'silence',
+      type: 'silence',
       from: '22:00',
       to: '08:00',
       beforeTime: '11:00',
@@ -370,7 +367,6 @@ export default function App() {
       count: '3',
       intervalMinutes: '30',
       afterTime: '20:00',
-      title: '',
     })
     setShowGoalModal(true)
   }, [])
@@ -378,7 +374,6 @@ export default function App() {
   const openEditGoal = useCallback((goal) => {
     setEditingGoalId(goal.id)
     setGoalForm({
-      category: getGoalCategory(goal),
       type: goal.type,
       from: goal.params.from || '22:00',
       to: goal.params.to || '08:00',
@@ -387,7 +382,6 @@ export default function App() {
       count: goal.params.count?.toString() || '3',
       intervalMinutes: goal.params.intervalMinutes?.toString() || '30',
       afterTime: goal.params.afterTime || '20:00',
-      title: goal.params.title || '',
     })
     setShowGoalModal(true)
     setOpenGoalSwipeId(null)
@@ -408,7 +402,6 @@ export default function App() {
         afterTime: goalForm.afterTime,
         intervalMinutes: parseInt(goalForm.intervalMinutes, 10) || 30,
       }
-    else if (goalForm.type === 'custom') params = { title: goalForm.title.trim() }
     setData((prev) => {
       const goals = prev.goals || []
       const nextGoals = editingGoalId
@@ -421,7 +414,6 @@ export default function App() {
               enabled: true,
               params,
               createdAt: Date.now(),
-              ...(goalForm.category === 'promise' ? { completedDates: [] } : {}),
             },
           ]
       return { ...prev, goals: nextGoals }
@@ -441,28 +433,6 @@ export default function App() {
       goals: (prev.goals || []).map((g) => (g.id === goalId ? { ...g, enabled: !g.enabled } : g)),
     }))
   }, [])
-
-  const toggleGoalCompletion = useCallback(
-    (goalId) => {
-      const todayKey = getDateKey(Date.now())
-      let markedDone = false
-      setData((prev) => ({
-        ...prev,
-        goals: (prev.goals || []).map((g) => {
-          if (g.id !== goalId || getGoalCategory(g) !== 'promise') return g
-          const dates = g.completedDates || []
-          const done = dates.includes(todayKey)
-          markedDone = !done
-          return {
-            ...g,
-            completedDates: done ? dates.filter((d) => d !== todayKey) : [...dates, todayKey],
-          }
-        }),
-      }))
-      setTimeout(() => showToast(markedDone ? 'Обещание выполнено' : 'Отметка снята'), 0)
-    },
-    [showToast]
-  )
 
   const openCreateHabit = useCallback(() => {
     setEditingHabitId(null)
@@ -532,7 +502,7 @@ export default function App() {
         habits: addHabitEvent(prev.habits || [], habitId, outcome),
       }))
       setHabitOutcomeId(null)
-      showToast(outcome === 'replacement' ? 'Новая привычка укреплена' : 'Ситуация отмечена')
+      if (outcome !== 'replacement') showToast('Ситуация отмечена')
     },
     [showToast]
   )
@@ -563,7 +533,6 @@ export default function App() {
           todaySmoked={todaySmoked}
           onAddCigarette={addCigarette}
           onSetActiveTab={setActiveTab}
-          onToggleGoalCompletion={toggleGoalCompletion}
           onOpenHabits={() => setActiveTab('habits')}
           onCreateHabit={openCreateHabit}
           onHabitSituation={setHabitOutcomeId}

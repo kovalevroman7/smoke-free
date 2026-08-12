@@ -26,6 +26,7 @@ export function loadData() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     const parsed = raw ? { ...defaultData, ...JSON.parse(raw) } : defaultData
+    parsed.goals = (parsed.goals || []).filter((goal) => goal.type !== 'custom')
     setDayStartHour(parsed.dayStartHour)
     return parsed
   } catch {

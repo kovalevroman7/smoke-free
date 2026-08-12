@@ -9,8 +9,8 @@ import {
   getHourlyCounts,
   sumCigaretteAmounts,
 } from './utils.js'
-import { getCompactGoalLabel, getGoalDayStatus, getPromiseStreak } from './goalUtils.js'
-import { GOAL_TYPES, getGoalCategory } from './goalTypes.js'
+import { getCompactGoalLabel, getGoalDayStatus } from './goalUtils.js'
+import { GOAL_TYPES } from './goalTypes.js'
 
 /** Вкладка статистики: сводка, столбчатый график, цели за период, детальный просмотр дня. */
 export default function StatsTab({
@@ -189,7 +189,7 @@ export default function StatsTab({
 
       {(data.goals || []).length > 0 &&
         (() => {
-          const goals = (data.goals || []).filter((goal) => getGoalCategory(goal) === 'rule')
+          const goals = (data.goals || []).filter((goal) => GOAL_TYPES[goal.type])
           if (goals.length === 0) return null
           const isMonth = statsPeriod === 'month'
           const weekdayLabels = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
@@ -257,78 +257,6 @@ export default function StatsTab({
           )
         })()}
 
-      {(data.goals || []).length > 0 &&
-        (() => {
-          const promises = (data.goals || []).filter((goal) => getGoalCategory(goal) === 'promise')
-          if (promises.length === 0) return null
-          const isMonth = statsPeriod === 'month'
-          const weekdayLabels = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс']
-          const leadingEmpty = isMonth ? (new Date(periodDays[0]).getDay() + 6) % 7 : 0
-          const trailingEmpty = isMonth
-            ? 6 - ((new Date(periodDays[periodDays.length - 1]).getDay() + 6) % 7)
-            : 0
-          return (
-            <div className={`goals-week-block ${isMonth ? 'month' : ''}`}>
-              <div className="goals-week-title">Обещания</div>
-              <div className="goals-week-days">
-                {isMonth
-                  ? weekdayLabels.map((wd) => (
-                      <div key={wd} className="goals-week-day-label">
-                        {wd}
-                      </div>
-                    ))
-                  : periodDays.map((day) => (
-                      <div key={day} className="goals-week-day-label">
-                        {getDayOfWeek(day)}
-                      </div>
-                    ))}
-              </div>
-              {promises.map((goal) => {
-                const goalStartKey = goal.createdAt ? getDateKey(goal.createdAt) : periodDays[0]
-                const done = new Set(goal.completedDates || [])
-                const { current, best } = getPromiseStreak(goal)
-                return (
-                  <div key={goal.id} className="goals-week-goal">
-                    <div className="goals-week-goal-header">
-                      <span className="goals-week-goal-label">{getCompactGoalLabel(goal)}</span>
-                      <span className="goals-week-goal-streak">
-                        🔥 {current} · рекорд {best}
-                      </span>
-                    </div>
-                    <div className="goals-week-cells">
-                      {Array.from({ length: leadingEmpty }, (_, i) => (
-                        <div key={`lead-${i}`} className="goals-week-cell empty" />
-                      ))}
-                      {periodDays.map((day) => {
-                        if (day < goalStartKey)
-                          return (
-                            <div key={day} className="goals-week-cell na">
-                              ·
-                            </div>
-                          )
-                        if (day > todayKey)
-                          return <div key={day} className="goals-week-cell empty" />
-                        const isDone = done.has(day)
-                        return (
-                          <div
-                            key={day}
-                            className={`goals-week-cell ${isDone ? 'success' : 'pending'}`}
-                          >
-                            {isDone ? '✓' : '·'}
-                          </div>
-                        )
-                      })}
-                      {Array.from({ length: trailingEmpty }, (_, i) => (
-                        <div key={`tail-${i}`} className="goals-week-cell empty" />
-                      ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )
-        })()}
-
       {selectedDay && (
         <div className="day-detail">
           <div className="day-detail-header">
@@ -368,7 +296,7 @@ export default function StatsTab({
               const dayCigs = data.cigarettes.filter((t) => getDateKey(t) === selectedDay)
               const visibleGoals = data.goals.filter(
                 (goal) =>
-                  getGoalCategory(goal) === 'rule' &&
+                  GOAL_TYPES[goal.type] &&
                   (!goal.createdAt || getDateKey(goal.createdAt) <= selectedDay)
               )
               if (visibleGoals.length === 0) return null
